@@ -8,22 +8,33 @@ class FrameProgramMenu(FrameBase):
 
     def __init__(self, master:Tk, main_window, **args):
 
+        # Retrieve whether the user is running the virtual or physical program.
         self.type = args["type"]
-
+        
         self.master = master
         self.main_window = main_window
 
+        # Initialise the current frame.
         super().__init__(master, main_window)
 
+        # Disable the frame from resizing.
         self.grid_propagate(0)
 
-        # Create subframes
+
+        # If the user is running the virtual frame,
         if(self.type == "virtual"):
+            # Set the visual frame to the simulation.
             self.frames["visual_frame"] = FrameSimulation(master, main_window)
+
+        # If the user is running the physical program,
         else:
+            # Set the visual frame to the physical program menu.
             self.frames["visual_frame"] = FramePhysicalMenu(master, main_window)
     
+        # Initialise the CSV frame as a list of possible CSVs.
         self.frames["csv_frame"] = FrameCSVList(master, main_window, self)    
+
+        # Initialise the filters frame.
         self.frames["filters_frame"] = FrameFiltersWindow(master, main_window)
 
         # Create a bottom frame for the subframes
@@ -53,10 +64,15 @@ class FrameProgramMenu(FrameBase):
         self.pack(fill="both", expand=True)
 
     def change_csv_frame(self, frame_name, **args):
+        """
+        Change the currently hosted CSV frmame.
+        """
 
+        # Retrieve the frame to be changed.
         frame = self.main_window.names_to_frames.get(frame_name)
-        self.frames["csv_frame"] = frame(self.master, self.main_window, self, **args)
 
+        # Change the current frame to the new frame.
+        self.frames["csv_frame"] = frame(self.master, self.main_window, self, **args)
         self.frames["csv_frame"].grid(in_=self.frames["left_frame"], row=0, column=0, sticky="nsew")
         
         

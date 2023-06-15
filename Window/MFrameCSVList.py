@@ -1,28 +1,33 @@
 import datetime
 from Window import *
 from tkinter import *
-import os # to retrieve files
+import os 
 from tkinter.filedialog import askopenfilename
 import shutil
 
 class FrameCSVList(FrameBase):
     """
-    A frame which lists the CSVs in the ./CSVs directory onto the screen.
+    A frame which lists the CSVs in the ./CSVs directory onto the screen, including the options to import a new CSV and to use Live Data.
     """
 
-    def __init__(self, master:Tk, main_window, parent_windows, **args):
+    def __init__(self, master:Tk, main_window, program_window, **args):
 
+        # Set a global variable specifying the frame this subframe is being held in.
+        self.program_window = program_window
 
-        self.parent_windows = parent_windows
+        # Set a global variable specifying the Window all frames are held in.
         self.main_window = main_window
         
+        # Initialise the current frame.
         super().__init__(master, main_window)
 
-        self.pack_propagate(0)  # Disable automatic resizing
-        
+        # Disable resizing of the current frame.
+        self.pack_propagate(0)  
+
+        # Give the current frame a black border.    
         self.configure(highlightthickness=1, highlightbackground="black")
         
-
+        # Retrieve and display the CSV files to the screen.
         self.display_files()
 
     def get_file(self, path, name):
@@ -31,17 +36,30 @@ class FrameCSVList(FrameBase):
         Retrieves the file name, file extension, modification time, and length.
         """
         
+        # Retrieve information about the current file.
         file_stat = os.stat(path)
+
+        # Retrieve the file name from the current file.
         new_file_name = name.split(".")[0]
+
+        # Retrieve the time the file was last modified.
         modification_time = datetime.datetime.fromtimestamp(file_stat.st_mtime).strftime("%d/%m/%y %H:%M:%S")
+
+        # Retrieve the file extension.
         file_extension = os.path.splitext(name)[1]
+
+        # Return the file size.
         file_length = file_stat.st_size
+
+        # Format the information into a dictionary.
         file_info = {
             "name": new_file_name,
             "modification_time": modification_time,
             "extension": file_extension,
             "length": file_length
         }
+
+        # Return the dictionary of information.
         return file_info
 
     def get_file_info(self, file_name):
@@ -49,24 +67,37 @@ class FrameCSVList(FrameBase):
         Retrieves the file information for a file.
         """
 
+        # Set the path for the file to be retrieved.
         file_path = os.path.join(self.directory_path, file_name)
         
+        # Retrieve the information about the chosen file.
         file_info = self.get_file(file_path, file_name)
 
+        # Append the information about this file to the list of information about every file.
         self.file_info_list.append(file_info)
 
 
             
 
     def display_files(self):
+        """
+        Display every file in the ./CSVs directory to the screen.
+        Display the file name, extension, last modified, and length of the file.
+        Display a delete button allowing the user to remove the file from the directory.
+        """
 
+        # Retrieve the image to be displayed on the delete button.
         self.delete_image = PhotoImage(file='./Assets/delete.png')
 
+        # Set the path for the CSVs to be retrieved from.
         self.directory_path = "./CSVs"
 
+        # Initialise a list containing the information about each file in the directory.
         self.file_info_list = []
 
+        # For each file in the directory,
         for file_name in os.listdir(self.directory_path):
+            # Retrieve information about the selected file.
             self.get_file_info(file_name)
 
         # set number of rows to number of csv files
@@ -79,12 +110,14 @@ class FrameCSVList(FrameBase):
         self.columnconfigure(1,weight=1)
         self.rowconfigure(1, weight=1)
 
+        # Create a canvas with a white background.
         self.canvas = Canvas(self, bg="white")
         self.canvas.grid(row=0, column=0, sticky=NSEW, columnspan=2, rowspan=row_length+1)
 
         # Create a frame inside the canvas to hold the buttons
         self.frame = Frame(self.canvas, bg="white")
 
+        # Allow the frame to resize.
         self.frame.columnconfigure(0,weight=1)
         
 
@@ -92,25 +125,33 @@ class FrameCSVList(FrameBase):
         scrollbar = Scrollbar(self, orient=VERTICAL, command=self.canvas.yview, **self.scrollbar_style)
         scrollbar.grid(row=0, column=5, sticky=NS, rowspan=row_length+1)
 
+        # Assign a vertical scrollbar to the canvas.
         self.canvas.configure(yscrollcommand=scrollbar.set)
-
         self.canvas.create_window((0, 0), window=self.frame, anchor=NW)
 
+        # Initialise the current row (of the CSV being displayed) to 1.
         self.row_num = 1
 
+        # Create a title label showing the Name of the files.
         Label(self.frame, text="Name", **self.secondary_label_style).grid(row=0,column=0, pady=15, sticky = EW, padx=10)
 
+        # Create a title label showing the file Extensions.
         Label(self.frame, text="Extension", **self.secondary_label_style).grid(row=0,column=1, pady=15, sticky = EW)
 
+        # Create a title label showing when the files were last modified.
         Label(self.frame, text="Modified", **self.secondary_label_style).grid(row=0,column=2, pady=15, sticky = EW)
 
+        # Create a title label showing the length of the files.
         Label(self.frame, text="Length", **self.secondary_label_style).grid(row=0,column=3, pady=15, sticky = EW)
 
+        # Create a label prompting the user to delete files.
         Label(self.frame, text="Delete", **self.secondary_label_style).grid(row=0,column=4, pady=15, sticky = EW, padx=20)
 
 
+        # For each CSV in the directory,
         for file in self.file_info_list:
-
+            
+            # Display the information about the CSV.
             self.display_row(file)
 
             
@@ -124,78 +165,115 @@ class FrameCSVList(FrameBase):
         options_frame = Frame(self, bg="white")
         options_frame.pack(side="bottom", fill="x")
 
+        # Create a back button, navigating the user to the Main Menu.
         Button(options_frame, text= "Back", command=lambda:self.parent_window.change_frame("main menu"), **self.button_style).pack(expand=True, side="left", pady=5)
 
+        # Create an import button, allowing the user to import files.
         Button(options_frame, text="Import File", **self.button_style, command=self.import_csv).pack(expand=True, side="left",pady=5)
 
-        Button(options_frame, text="Use Live Data", **self.button_style, command = lambda:self.parent_windows.change_csv_frame("connect to sensor")).pack(expand=True, side="left",pady=5)
+        # Create a Use Live Data button, navigating the user to the Connection screen.
+        Button(options_frame, text="Use Live Data", **self.button_style, command = lambda:self.program_window.change_csv_frame("connect to sensor")).pack(expand=True, side="left",pady=5)
 
         
 
     def display_row(self, file):
+        """
+        Display a row of information about a CSV.
+        """
             
+        # Create a function for each button, allowing the user to select that CSV to display.
         change_function = self.create_csv_function(file["name"], file["extension"])
+
+        # Display a button containing the name of the current CSV.
         Button(self.frame, text= file["name"] , **self.button_style, command=change_function).grid(row=self.row_num, column=0, sticky=NSEW, padx=20)
 
+        # Display a label containing the file extension.
         Label(self.frame, text= file["extension"],**self.secondary_label_style).grid(row=self.row_num, column=1, sticky=NSEW, padx=20)
 
+        # Display a label containing the time the file was last modified.
         Label(self.frame, text= file["modification_time"], **self.secondary_label_style).grid(row=self.row_num, column=2, sticky=NSEW, padx=20)
 
+        # Display a label containing the length of the file.
         Label(self.frame, text= file["length"], **self.secondary_label_style).grid(row=self.row_num, column=3, sticky=NSEW, padx=20)
 
+        # Create a function allowing the user to delete the current file.
         delete_function = self.create_delete_function(self.row_num, self.frame, file, self.canvas)
+
+        # Display a button allowing the user to delete the current file.
         Button(self.frame, image=self.delete_image, command=delete_function, **self.image_style).grid(row=self.row_num, column=4, sticky=NSEW, padx=20)
 
+        # Increment the current row of data to be displayed.
         self.row_num+=1
 
     
     def import_csv(self):
+        """
+        Allows the user to import a CSV to the project.
+        Copies the file to the ./CSVs directory.
+        """
 
-        # open file dialog
-
+        # Open the file dialog.
         file_path = askopenfilename()
 
-        # add chosen file to list
-
+        # Retrieve the file name from the path.
         file_name = os.path.basename(file_path)
 
-        print(file_path)
-        print(file_name)
-
+        # Copy the chosen file to the ./CSVs directory.
         shutil.copy(file_path, self.directory_path)
 
+        # Retrieve the information about the file.
         self.get_file_info(file_name)
+
+        # Display the information to the screen.
         self.display_row(self.file_info_list[-1])
 
 
 
-
-
-
-        pass
-
-    def use_live_data(self):
-        pass
-
     def create_delete_function(self, row, frame, file, canvas):
+        """
+        Create a unique delete function for each row, when the delete button is pressed it deletes that row of data.
+        """
         return lambda: self.delete_file(frame, row, file["name"], file["extension"], canvas)
     
     def create_csv_function(self, name, extension):
+        """
+        Create a unique function for each CSV, navigating to the Display screen with the chosen CSV as the argument.
+        """
+
+        # Append the file name to the file extension.
         file_name = name + extension
+
+        # Create the file path.
         file_path = os.path.join(self.directory_path, file_name)
+
+        # Navigate to the Display screen with the current CSV as an argument.
         return lambda: self.parent_windows.change_csv_frame("csv display", path=file_path)
 
     def delete_file(self, frame, row, name, extension, canvas):
+        """
+        Delete the chosen file from the ./CSVs directory.
+        Remove the row of data from the screen.
+        """
 
-        # delete file from directory
+        # Append the file name to the file extension.
         file_name = name + extension
+
+        # Create the file path.
         file_path = os.path.join(self.directory_path, file_name)
+
+        # Remove the file from the ./CSVs directory.
         os.remove(file_path)
 
-        # Delete the widgets in the specified row
+        # For each widget on the frame,
         for child in frame.winfo_children():
+
+            # Retrieve the information about the current widget.
             info = child.grid_info()
+
+            # If the row of the current widget == the row of the data being deleted,
             if 'row' in info and info['row'] == row:
+
+                # Remove the widget from the screen.
                 child.grid_forget()
 
         # Adjust the scroll region of the canvas

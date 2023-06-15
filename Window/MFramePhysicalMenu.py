@@ -7,61 +7,96 @@ import pty
 import netifaces
 import time
 
+"""
+TODO:
+
+- WAIT UNTIL THE USER HAS SELECTED A CSV (MAKE A SELECT CSV FRAME, REPLACE.)
+- PASS THE CSV INTO THIS CLASS
+- PASS THE CSV TO PLAN_MOVES
+
+- CREATE THE HELP SCREEN
+"""
+
 class FramePhysicalMenu(FrameBase):
     """
-    A frame to allow the user to use the UR3e arm to draw to a canvas.
+    A frame holding functionality to connect to the UR3e arm and run the program.
     """
         
     def __init__(self, master:Tk, main_window):
+
+        # Initialise the frame.
         super().__init__(master, main_window)
+
+        # Initialise a global variable representing the Window the frames are held on.
         self.main_window = main_window
+
+        # Initialise a boolean describing if the user is connected to the UR3e arm.
         self.connected = False
+
+        # Initialise a variable describing the current directory.
         self.original_directory = os.getcwd()
 
+        # Change the content on the frame to the Program Screen.
         self.change_frame_content(self.create_program_screen)
+
+        # Disable the frame from resizing.
         self.pack_propagate(0)
 
 
 
     def create_program_screen(self):
-        # return a frame that is the program screen, set the current frame to this frame
+        """
+        Return a frame containing the content for the Main Program Screen.
+        """
         
+        # Create a frame for the content to be placed on.
         frame = Frame(self)
 
+        # Create a subframe to hold the title.
         title_frame = Frame(frame)
         title_frame.config(bg="white")
 
-        # create help button
+        # create a Help button which navigates to the Help screen.
         Button(title_frame, text="First Time Connecting?", command= lambda:self.change_frame_content(self.create_help_frame),**self.button_style).pack(side=LEFT, pady=5, padx=5)
-        
-
         title_frame.pack(side=TOP, fill=X)
 
-
+        # Create a subframe to hold the options.
         options_frame = Frame(frame)
         options_frame.config(bg="white")
         
-        # create back button
+        # Create a back button which navigates to the Main Menu.
         Button(options_frame, text="Back", command= lambda:self.change_frame_content(self.main_window.change_frame("main menu")),**self.button_style).pack(side=LEFT, expand=TRUE, pady=5)
 
+        # Create a Connection button which attempts initial connection to the UR3e arm.
         self.connection_button = Button(options_frame, text="Attempt Connection", command= lambda:self.attempt_connection(),**self.button_style)
         self.connection_button.pack(side=LEFT, expand=TRUE, pady=5)
 
+        # Create a launch button which initially has no function.
         self.launch_button = Button(options_frame, text="Launch Program",**self.button_style)
 
+        # If the user is not connected to the UR3e arm,
         if(self.connected == False):
-            self.launch_button.config(bg="#D3D3D3") # cannot launch yet
+            # Set the colour of the launch button to Grey, disabling the user from launching the program.
+            self.launch_button.config(bg="#D3D3D3")
+
+        # If the user is connected to the UR3e arm,
         else:
+            # Set the colour of the launch button to Blue.
             self.launch_button.config(bg="#42c4ee")
+
+            # Assign the button a command to attempt to run the program.
             self.launch_button.config(command=lambda:self.run_physical_program())
+
+            # Set the colour of the connection button to green: the user has connected.
             self.connection_button.config(bg="green")
 
         self.launch_button.pack(side=LEFT, expand=TRUE, pady=5)
-
         options_frame.pack(side=BOTTOM, fill=X)
 
+        # Create a Title label for the frame.
         Label(frame, text="Connecting to the UR3e Arm", **self.title_label_style).pack(side=TOP, pady=35, padx=10)
 
+        # Create Description labels for the frame.
         Label(frame,text="If this is your first time using the program, click the help button to set up a workspace.", **self.secondary_label_style).pack()
         Label(frame,text="An Ethernet connection is highly recommended.", **self.secondary_label_style).pack()
         Label(frame,text="Otherwise, ensure you are connected to the same WiFi as the UR3e arm.", **self.secondary_label_style).pack()
@@ -74,64 +109,93 @@ class FramePhysicalMenu(FrameBase):
 
 
     def create_help_frame(self):
+        """
+        Create a help frame which prompts the user to create a catkin workspace.
+        """
 
+        # Create a frame to hold the content of the Help screen.
         frame = Frame(self)
-        # return a frame that is the help screen, set the current frame to this frame
+
+        # TEMP
         Label(frame, text="help stuff", **self.secondary_label_style).pack(side=TOP)
 
-        # create back button
+        # Create a back button which navigates the user to the Program Screen.
         Button(frame, text="Back", command= lambda:self.change_frame_content(self.create_program_screen),**self.button_style).pack(side=BOTTOM)
 
         return frame
     
 
     def get_network_ip(self):
-        # TODO: MAKE IT SO THAT IT HAS TO START WITH 10
+        """
+        Display the Network IP address for the user to enter into the UR3e tablet.
+        """
+
+        # Retrieve a list of possible IP addresses.
         interfaces = netifaces.interfaces()
+
+        # For each IP address,
         for interface in interfaces:
+
+            # Retrieve the IP address.
             addresses = netifaces.ifaddresses(interface)
+
+            # If the address is an IP address.
             if netifaces.AF_INET in addresses:
+
+                # Retrieve the information about the address.
                 for ip_info in addresses[netifaces.AF_INET]:
                     ip_address = ip_info['addr']
-                    if not ip_address.startswith('127.'): # filter out localhost
+
+                    # Filter out the localhost IP address.
+                    if not ip_address.startswith('127.'): 
                         return ip_address
+                    
+        # Else, only localhost was found.
         return None
 
     
     def create_launch_frame(self):
+        """
+        Create the frame which holds the information to connect to the UR3E arm.
+        """
 
+        # Create a frame to display the connection information.
         frame = Frame(self)
 
+        # Create a label prompting the user to connect to the same WIFI as the robot.
         Label(frame, text="Ensure you are connected to the same WiFi as the Robot.", **self.secondary_label_style).pack(pady=10)
 
+        # Display the image of the External Control information.
         self.external_control_image = PhotoImage(file='./Assets/external_control.png')
         Label(frame, image = self.external_control_image, **self.image_style).pack()
 
-        
-        # get IP and display it in label
-
+        # Retrieve the IP Address.
         ip_address = self.get_network_ip()
 
+        # Display the IP Address.
         Label(frame, text = "Your IP Address: " + ip_address, **self.secondary_label_style).pack(pady=10)
 
+        # Display information labels to help the user.
         Label(frame, text="On the UR3e tablet, navigate to the page shown in the image.", **self.secondary_label_style).pack()
-
         Label(frame, text="Under Host IP, enter your IP address.", **self.secondary_label_style).pack()
 
+        # ADD A BACK BUTTON
+
+        # Create a button allowing the user to continue once successfully connected.
         self.continue_button = Button(frame, text= "Continue", **self.button_style)
         self.continue_button.pack(side= BOTTOM, pady=10)
 
-        # change so the colour is not blu
-        # e
+        # Change the colour of the continue button to grey as the user has not yet connected.
         self.continue_button.config(bg="#D3D3D3")
 
-        # check if robot connected to control interface
         
-
-
         return frame
     
     def change_frame_content(self, new_content):
+        """
+        Change the currently hosted frame.
+        """
+
         # Destroy all widgets on the current frame
         for widget in self.winfo_children():
             widget.destroy()
@@ -142,29 +206,21 @@ class FramePhysicalMenu(FrameBase):
         self.pack(side=LEFT, expand=TRUE,fill=BOTH)
 
 
-    def attempt_connection(self):
-
-        # connect button is turned orange
-        # create a thread that runs launch file
-        # on another page:
-        # once the launch file has printed robot connected, prompt user to enter ip into tablet
-        # confirm button, goes back to main screen and connect button is turned green
-
-        self.connection_button.config(bg="orange")
-
-        # screen to say turn on the robot
-
-        self.connection_thread = Thread(target=self.run_connection_command)
-        self.connection_thread.start()
-
-
 
     def run_connection_command(self):
+        """
+        Attempt to connect to the UR3E arm using the roslaunch cms_ur_launch tsoutsi.launch command.
+        """
+
+        
         ros_command = "source devel/setup.bash && roslaunch cms_ur_launch tsoutsi.launch"
+
+        # Change directory to the catkin workspace.
         os.chdir("catkin_ws")
 
         master, slave = pty.openpty()
 
+        # Run the connection command.
         process = subprocess.Popen(
             ["bash", "-c", ros_command],
             stdout=slave,
@@ -172,21 +228,33 @@ class FramePhysicalMenu(FrameBase):
             universal_newlines=True
         )
 
+        # The command runs indefinitely to establish the connection.
         while True:
             try:
+                # Read the current line outputted by the process.
                 output = os.read(master, 1024).decode()
+
+                # If a line was read,
                 if output:
+
+                    # If the line contains the acceptance string,
                     if "Robot mode is now RUNNING" in output:
+
                         # SUCCESS!
+                        # Revert the directory back to the original directory.
                         os.chdir(self.original_directory)
 
-                        # open a page that tells the user to put their ip in
-
+                        # Change the frame to a frame prompting the user to enter their IP.
                         self.change_frame_content(self.create_launch_frame)
 
+                    # If the user successfully connected to the robot,
                     if("Robot connected to reverse interface" in output and self.connected==False):
+
+                        # Allow the user to continue.
                         self.continue_button.config(bg="#42c4ee")
                         self.continue_button.config(command=lambda:self.change_frame_content(self.create_program_screen))
+
+                        # Record that the user has connected to the robot.
                         self.connected = True
             
 
@@ -196,23 +264,41 @@ class FramePhysicalMenu(FrameBase):
             except OSError:
                 break
 
+        # Wait for the process to end.
         process.wait()
 
+        # If the process has ended, connection has failed.
         if process.returncode != 0:
             # FAIL!
             self.connection_button.config(bg="red")
             os.chdir(self.original_directory)
 
+    
     def wait_for_moveit_completion(self):
+        """
+        A thread to wait for a command to succeed without hanging the program.
+        """
+
+        # While the acceptance flag has not been set,
         while not self.moveit_succeeded:
+            # Wait for the thread to be set.
             time.sleep(0.1)
+
         # Moveit completed, trigger the launch_program method
         self.launch_program()
 
     def run_physical_program(self):
+        """
+        Attempt to run the program on the UR3E arm.
+        """
+
+        # Change the colour of the launch button to orange to show that the program is attempting to run.
         self.launch_button.config(bg="orange")
+
+        # Set the moveit success flag to false.
         self.moveit_succeeded = False
 
+        # Create a thread that attempts to launch moveit.
         moveit_thread = Thread(target=self.launch_moveit)
         moveit_thread.start()
 
@@ -224,12 +310,18 @@ class FramePhysicalMenu(FrameBase):
 
 
     def launch_moveit(self):
+        """
+        A thread responsible for launching the moveit command.
+        """
+
         moveit_command = "source devel/setup.bash && roslaunch ur3e_moveit_config moveit_planning_execution.launch"
 
+        # Change directory to the catkin workspace in order to run ros commands.
         os.chdir("catkin_ws")
 
         master, slave = pty.openpty()
 
+        # Run the command which attempts to launch moveit.
         process = subprocess.Popen(
             ["bash", "-c", moveit_command],
             stdout=slave,
@@ -237,38 +329,47 @@ class FramePhysicalMenu(FrameBase):
             universal_newlines=True
         )
 
+        # The command runs indefinitely to keep a connection to the robot.
         while True:
             try:
+                # Read the current output from the command.
                 output = os.read(master, 1024).decode()
+
+                # If a line has been read,
                 if output:
+
+                    # If the output is the success output,
                     if "You can start planning now!" in output:
+
                         # SUCCESS!
                         self.moveit_succeeded = True
-                        print("moveit succeeded")
-
                         break
             except OSError:
                 break
 
+        # Wait for the process to end.
         process.wait()
-        # get moveit successful message
 
-        
+        # If the process has ended, it has failed.
         if process.returncode != 0:
             # FAIL!
             self.launch_button.config(bg="red")
             os.chdir(self.original_directory)
 
 
+    
     def launch_program(self):
+        """
+        Attempt to run the plan_moves file which controls movement of the robot.
+        """
 
 
         program_command = "source devel/setup.bash && rosrun ur3e_moveit_config plan_moves.py"
-        # get program successful message
 
 
         master, slave = pty.openpty()
 
+        # Execute the command to run the plan_moves file.
         process = subprocess.Popen(
             ["bash", "-c", program_command],
             stdout=slave,
@@ -276,27 +377,33 @@ class FramePhysicalMenu(FrameBase):
             universal_newlines=True
         )
 
+        # While the command is running,
         while True:
             try:
+                # Read the current output.
                 output = os.read(master, 1024).decode()
+
+                # If there is output,
                 if output:
                     print(output)
-                    if "Robot mode is now RUNNING" in output:
+
+                    # GET THE SUCCESS MESSAGE
+
+                    """if "Robot mode is now RUNNING" in output:
                         # SUCCESS!
                         self.connection_button.config(bg="green")
                         os.chdir(self.original_directory)
 
-                        break
+                        break"""
             except OSError:
                 break
 
+        # Wait for the process to terminate.
         process.wait()
 
+        # If the process failed,
         if process.returncode != 0:
             # FAIL!
             self.launch_button.config(bg="red")
             os.chdir(self.original_directory)
 
-
-
-        pass
