@@ -92,7 +92,7 @@ To get a local copy up and running follow these simple example steps.
 
 Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
-<video src='/Assets/linkedin_video.mp4'/>
+[label](Assets/linkedin_video.mp4)
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
