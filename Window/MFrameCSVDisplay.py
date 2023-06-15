@@ -1,8 +1,9 @@
 from Window import *
 from tkinter import *
-from pylsl import StreamInlet, resolve_byprop
+
 from threading import Thread
 import time
+import csv
 
 """
 TODO:
@@ -12,15 +13,12 @@ TODO:
 
 class FrameCSVDisplay(FrameBase):
     """
-    WRITE PDOC
+    Display a graph of the chosen CSV to the screen.
     """
 
 
-    def __init__(self, master:Tk, main_window, parent_frame, **args):
+    def __init__(self, master:Tk, main_window, parent_frame):
         
-        # Retrieve the kwarg containing the path to be displayed to the screen.
-        self.path = args["path"]
-
         # Initialise the global variable which tracks the instance of Program Menu this frame is contained in.
         self.frame = parent_frame
         
@@ -32,8 +30,8 @@ class FrameCSVDisplay(FrameBase):
 
         # Initialise parameters relating to the drawing.
         self.play_animation = None
-        self.pause_animation = True
         self.blink = False
+        self.back=False
 
 
         # Initialise the current frame instance.
@@ -60,96 +58,41 @@ class FrameCSVDisplay(FrameBase):
         # Initialise the array holding the CSV Data.
         self.data = []
 
-        # Initialise the currently accessed index of the CSV Data.
-        self.loops = 1
-
         # Create a thread to draw the graph of brain data to the screen.
-        graph_thread = Thread(target=self.handle_graph)
-        graph_thread.start()
-
+        self.graph_thread = Thread(target=self.handle_graph)
+        self.graph_thread.start()
 
     def handle_graph(self):
-        """
-        Decide whether the data should be accessed in live time or from a prerecorded file.
-        """
+        with open('muse_data.csv', 'r') as file:    
+            csv_reader = csv.reader(file)
 
-        # If the data is being recorded in live time,
-        if(self.path == "muse_data.csv"):
+            try:
+                next(csv_reader)  # Skip header row
+            except StopIteration:
+                self.after(50, self.handle_graph)
 
-            # Indicate that the drawing has started.
-            self.play_csv()
+            while self.back==False:
+                try:
+                    current_row = next(csv_reader)
 
-            # Retrieve data from the sensor.
-            self.connect_to_sensor()
+                    # Convert the elements to float before calculating the average
+                    current_row = [float(value) for value in current_row]
 
-        # If the data has been prerecorded,
-        else:
+                    # Calculate the average of the current row of data.
+                    avg = sum(current_row) / 4
 
-            # Read the data from the specified path.
-            data = self.csv_handler.read_csv(self.path)
+                    # Draw the next row of data. Retrieve whether the user is currently blinking.
+                    self.blink = self.simulation_frame.penLoop(avg, self.blink)
 
-            # For each row of data,
-            for x in data:
+                    # Increment the position of the slider and the current row to be accessed.
+                    self.plus_csv(1)
 
-                # Plot the current row of data.
-                self.plot_graph(x)
+                    self.plot_graph(current_row)
+                    time.sleep(0.01)
+                except StopIteration:
+                    # If there is no next row, sleep or perform other desired actions
+                    time.sleep(0.1)  # Sleep for 0.1 second
 
-                # Sleep, allowing other threads to run.
-                time.sleep(0.01)
-
-    
-
-    def connect_to_sensor(self):
-        """
-        Retrieve data in live time from the Muse sensor.
-        """
-
-        # retrieve the currently connected LSL streams.
-        streams = resolve_byprop('type', 'EEG', timeout=2)
-        if len(streams) == 0:
-            raise RuntimeError('Can\'t find EEG stream.')
-
-        # Set active EEG stream to inlet and apply time correction
-        self.inlet = StreamInlet(streams[0], max_chunklen=12)
-
-        # Length of epochs used to compute the FFT (in seconds)
-        EPOCH_LENGTH = 1
-
-        # Amount of overlap between two consecutive epochs (in seconds)
-        OVERLAP_LENGTH = 0.8
-
-        # Amount to 'shift' the start of each next consecutive epoch
-        SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
-
-        # Get the stream info and description
-        info = self.inlet.info()
-
-        # Get sampling frequency, for muse2 sampling frequency = 256
-        fs = int(info.nominal_srate())
-
-        self.max_samples = int(SHIFT_LENGTH * fs)
-
-        # Create a thread to get the current row of CSV data.
-        thread = Thread(target=self.get_row)
-        thread.start()
-
-
-    def get_row(self):
-        """
-        Get the current row of live CSV data and plot it on the graph.
-        """
-
-        # The thread constantly loops and plots the next row of live data.
-        while(True):
-
-            # Retrieve the next row of data.
-            row = self.csv_handler.read_live_data(self.inlet, self.max_samples)
-
-            # Plot the row on the graph.
-            self.plot_graph(row)
-
-
-        
 
     def create_text(self):
         """
@@ -210,29 +153,19 @@ class FrameCSVDisplay(FrameBase):
         self.buttons_frame = Frame(self)
 
 
-        # Retrieve the images to be displayed on the buttons.
-        self.play_image = PhotoImage(file="./Assets/play.png")
-        self.pause_image = PhotoImage(file="./Assets/pause.png")
-        self.rewind_image = PhotoImage(file="./Assets/rewind.png")
-
-        # Create a play button which allows the user to play the CSV from the current position.
-        self.play_button = Button(self.buttons_frame, image=self.play_image, command = lambda:self.play_csv())
-        self.play_button.pack(side="left", fill="both")
-
-        # Create a pause button which allows the user to pause the CSV.
-        self.pause_button = Button(self.buttons_frame, image=self.pause_image, command = lambda:self.pause_csv())
-        self.pause_button.pack(side="left", fill="both")
-
-        # Create a rewind button which sets the current position of the CSV to the start.
-        self.rewind_button = Button(self.buttons_frame, image=self.rewind_image, command = lambda:self.rewind_csv())
-        self.rewind_button.pack(side="left", fill="both")
-
-
         # Create a back button which allows the user to navigate the the list of CSVs.
-        self.back_button = Button(self.buttons_frame, text="Back", **self.button_style, command=lambda:self.frame.change_csv_frame("csv list"))
+        self.back_button = Button(self.buttons_frame, text="Back", **self.button_style, command=lambda:self.go_back())
         self.back_button.pack(side="left", fill="both", expand=True)
 
         self.buttons_frame.pack(side="bottom", fill="x")
+
+    def go_back(self):
+        # reset simulation
+        self.back=True
+        self.simulation_frame.penSpawn()
+        self.graph_thread.join()
+        self.frame.change_csv_frame("csv list")
+
 
     
 
@@ -246,25 +179,6 @@ class FrameCSVDisplay(FrameBase):
         x = self.canvas.coords(self.vertical_line)[0] + amount
         self.canvas.coords(self.vertical_line, x, -50, x, 500)
 
-        # Increment the current row of the CSV to be drawn.
-        self.loops += amount
-
-
-
-
-    def rewind_csv(self):
-        """
-        Rewinds the position of the CSV to the start.
-        """
-
-        # Update the position of the vertical line
-        x = 50
-        self.canvas.coords(self.vertical_line, x, -50, x, 500)
-
-        self.loops=1
-
-        # reset simulation
-        self.simulation_frame.penSpawn()
 
     
 
@@ -272,9 +186,8 @@ class FrameCSVDisplay(FrameBase):
         """
         Plays the current CSV, incrementing the slider and starting the associated simulation.
         """
-        if self.pause_animation:
-            self.pause_animation = False
-            self.animate_csv()
+
+        self.paused=False
 
 
 
@@ -282,33 +195,12 @@ class FrameCSVDisplay(FrameBase):
         """
         Pauses the CSV, pausing the slider and the associated simulation.
         """
-        self.pause_animation = True
+
+        self.paused=True
         self.simulation_frame.penStop()
 
-    def animate_csv(self):
-        """
-        Visually increments the slider on the screen.
-        """
 
-        # If the current row to be accessed does not exist yet,
-        if(self.loops >= len(self.data)):
-           
-           # Wait for the row to be accessed.
-           self.after(10,self.animate_csv)
-           return
 
-        # Calculate the average of the current row of data.
-        avg = sum(self.data[self.loops]) / 4
-
-        # Draw the next row of data. Retrieve whether the user is currently blinking.
-        self.blink = self.simulation_frame.penLoop(avg, self.blink)
-        
-        # Increment the position of the slider and the current row to be accessed.
-        self.plus_csv(1)
-
-        # Repeat the animation if not paused.
-        if not self.pause_animation:
-            self.after(10,self.animate_csv)
 
 
 
@@ -342,13 +234,13 @@ class FrameCSVDisplay(FrameBase):
                     x1 = 50 + len(self.data)
 
                     # Set the starting y position of the line to the ending y position of the previous line.
-                    y1 = self.scale_value(float(self.data[-2][row_index]) * 0.4)
+                    y1 = self.scale_value(float(self.data[-2][row_index]), 0.4)
 
                     # Set the ending x position of the line to the starting position + 1.
                     x2 = x1 + 1
 
                     # Set the ending y position of the line to the scaled value retrieved from the current channel of data.
-                    y2 = self.scale_value(float(self.data[-1][row_index]) * 0.4)
+                    y2 = self.scale_value(float(self.data[-1][row_index]), 0.4)
 
                     # Plot the current line on the graph. Represent each channel with a distinct colour.
                     self.canvas.create_line(x1, y1 + y_offset, x2, y2 + y_offset, fill=colors[row_index])
@@ -356,10 +248,12 @@ class FrameCSVDisplay(FrameBase):
         # Update the scroll region of the scrollbar to include the newly plotted line.
         self.update_scroll_region()
 
-    def scale_value(value):
+    def scale_value(self, value, scaling_factor):
         """
         Scale the given value to fall between -100 and 100.
         """
+
+        value *= scaling_factor
 
         # If the value exceeds 100, set the value to 100.
         if value > 100:
@@ -394,6 +288,7 @@ class FrameCSVDisplay(FrameBase):
         """
 
         # Reset the position of the pen and delete the line currently drawn.
+        self.simulation_frame.penStop()
         self.simulation_frame.penSpawn()
 
         # Get a list of active threads

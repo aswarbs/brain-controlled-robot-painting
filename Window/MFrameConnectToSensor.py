@@ -3,6 +3,10 @@ from tkinter import *
 from muselsl import list_muses
 from threading import *
 import subprocess
+from pylsl import StreamInlet, resolve_byprop
+import csv
+import numpy as np
+import time
 
 class FrameConnectToSensor(FrameBase):
     """
@@ -55,6 +59,89 @@ class FrameConnectToSensor(FrameBase):
 
         # Refresh the available muse sensors
         self.refresh()
+
+
+    def write_live_data(self):
+        """
+        Read live data from the Brain Sensor, row by row.
+        Return the current row of brain data from the sensor.
+        """
+
+        # Clear existing data in the muse_data.csv file
+        with open("muse_data.csv", mode="w", newline=""):
+            pass
+
+        # Connecting to an EEG Stream
+        print('Looking for an EEG stream...\n\n\n')
+        streams = resolve_byprop('type', 'EEG', timeout=2)
+        if len(streams) == 0:
+            raise RuntimeError('Can\'t find EEG stream.')
+                
+        # Set active EEG stream to inlet and apply time correction
+        print('Start acquiring data')
+        inlet = StreamInlet(streams[0], max_chunklen=12)
+
+        # Get the stream info and description
+        info = inlet.info()
+
+        # Get sampling frequency, for muse2 sampling frequency = 256
+        fs = int(info.nominal_srate())
+
+        # writing to the txt file 
+        with open("muse_data.csv", mode = 'w', newline = '') as file:
+            writer = csv.writer(file)
+            
+                # Length of epochs used to compute the FFT (in seconds)
+        EPOCH_LENGTH = 1
+
+        # Amount of overlap between two consecutive epochs (in seconds)
+        OVERLAP_LENGTH = 0.8
+
+        # Amount to 'shift' the start of each next consecutive epoch
+        SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
+
+
+        # Getting Data
+        try:
+            # The following loop acquires data
+            while True:
+                        
+                # Acquire data
+                # Obtain EEG data from the LSL stream
+                eeg_data, timestamp = inlet.pull_chunk(timeout = 1, max_samples = int(SHIFT_LENGTH * fs))
+
+                # Getting the data for each channel
+                ch_data_tp9 = np.array(eeg_data)[:, 0]
+                ch_data_af7 = np.array(eeg_data)[:, 1]
+                ch_data_af8 = np.array(eeg_data)[:, 2]
+                ch_data_tp10 = np.array(eeg_data)[:, 3]
+
+
+                row_data = [np.mean(ch_data_tp9), np.mean(ch_data_af7), np.mean(ch_data_af8), np.mean(ch_data_tp10)]
+
+                with open("muse_data.csv", mode = "a", newline = '') as file:
+                    # Write to file in a new line
+                    writer = csv.writer(file)
+
+                    print(row_data)
+
+                    # write the data to the file
+                    writer.writerow(row_data)
+
+        except KeyboardInterrupt:
+            print('Closing!')
+
+        except IndexError:
+            self.after(10,self.write_live_data)
+
+
+
+
+
+
+
+
+
 
 
     def display_detected_sensors(self, devices, mac_addresses):
@@ -275,8 +362,11 @@ class FrameConnectToSensor(FrameBase):
         Destroy all threads currently running and redirect the user to the Display CSV frame.
         """
 
+        self.writing_thread = Thread(target=self.write_live_data)
+        self.writing_thread.start()
+
         # destroy threads (except the streaming thread)
         self.refresh_thread.join()
 
         # change frame to display the live data.
-        self.visual_window.change_csv_frame(frame, path="muse_data.csv")
+        self.visual_window.change_csv_frame(frame)

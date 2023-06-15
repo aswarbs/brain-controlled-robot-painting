@@ -11,13 +11,6 @@ class FrameSimulation(FrameBase):
         super().__init__(master, main_window)
         self.pack_propagate(0)
 
-        # this stuff is not showing :(
-
-        self.title_frame = Frame(self)
-        self.title_frame.config(bg="white")
-        Label(self.title_frame, text="Virtual Prototype Demonstration", **self.title_label_style)
-        self.title_frame.pack(side=TOP)
-        
         
 
         self.configure(highlightthickness=1, highlightbackground="black")

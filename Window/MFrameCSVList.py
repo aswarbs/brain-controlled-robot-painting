@@ -4,6 +4,7 @@ from tkinter import *
 import os 
 from tkinter.filedialog import askopenfilename
 import shutil
+import csv
 
 class FrameCSVList(FrameBase):
     """
@@ -247,7 +248,29 @@ class FrameCSVList(FrameBase):
         file_path = os.path.join(self.directory_path, file_name)
 
         # Navigate to the Display screen with the current CSV as an argument.
-        return lambda: self.parent_windows.change_csv_frame("csv display", path=file_path)
+        return lambda:self.store_new_csv(file_path)
+    
+    def store_new_csv(self, file_path):
+        # Clear the new file
+        with open("muse_data.csv", 'w', newline=''):
+            pass
+        
+        # Copy data from the old file to the new file, writing only columns 2 to 5 and converting to floats
+        with open(file_path, 'r') as old_file, open("muse_data.csv", 'a', newline='') as new_file:
+            csv_reader = csv.reader(old_file)
+            csv_writer = csv.writer(new_file)
+
+            # Skip the first line
+            next(csv_reader)
+        
+            
+            for row in csv_reader:
+                # Select columns 2 to 5 (indexes 1 to 4) from the row and convert to floats
+                selected_columns = [float(value) for value in row[1:5]]
+                
+                csv_writer.writerow(selected_columns)
+
+        self.program_window.change_csv_frame("csv display")
 
     def delete_file(self, frame, row, name, extension, canvas):
         """

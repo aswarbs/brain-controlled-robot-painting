@@ -21,16 +21,7 @@ class FrameProgramMenu(FrameBase):
         self.grid_propagate(0)
 
 
-        # If the user is running the virtual frame,
-        if(self.type == "virtual"):
-            # Set the visual frame to the simulation.
-            self.frames["visual_frame"] = FrameSimulation(master, main_window)
 
-        # If the user is running the physical program,
-        else:
-            # Set the visual frame to the physical program menu.
-            self.frames["visual_frame"] = FramePhysicalMenu(master, main_window)
-    
         # Initialise the CSV frame as a list of possible CSVs.
         self.frames["csv_frame"] = FrameCSVList(master, main_window, self)    
 
@@ -57,6 +48,17 @@ class FrameProgramMenu(FrameBase):
         # Create a right frame for visual_frame
         self.frames["right_frame"] = Frame(self.frames["bottom_frame"])
         self.frames["right_frame"].pack(side="left", fill="both", expand=True)
+
+        # If the user is running the virtual frame,
+        if(self.type == "virtual"):
+            # Set the visual frame to the simulation.
+            self.frames["visual_frame"] = FrameSimulation(master, main_window)
+
+        # If the user is running the physical program,
+        else:
+            # Set the visual frame to the physical program menu.
+            self.frames["visual_frame"] = FramePhysicalMenu(master, main_window)
+    
 
         # Place visual_frame inside the right frame
         self.frames["visual_frame"].pack(in_=self.frames["right_frame"], fill="both", expand=True)
