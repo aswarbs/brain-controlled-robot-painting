@@ -92,24 +92,10 @@ To get a local copy up and running follow these simple example steps.
 
 This project is intended to entertain young people and introduce them to Computer Science. It is a fun, interactive demonstration of how robotics and brain technology can be combined, and also an exploration in the role technology can play in creating unique art.
 
-[label](Assets/bcrp.mp4)
+[!Brain Controlled Robot Painting][https://youtu.be/VzouSenkfsg/0.jpg](https://youtu.be/VzouSenkfsg)
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
-
-See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
