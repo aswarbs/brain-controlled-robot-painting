@@ -4,6 +4,11 @@ from tkinter import *
 from threading import Thread
 import time
 import csv
+import os
+import shutil
+from datetime import datetime
+import numpy as np
+from scipy import signal
 
 """
 TODO:
@@ -24,9 +29,6 @@ class FrameCSVDisplay(FrameBase):
         
         # Retrieve the instance of the simulation frame where the brain data will be displayed.
         self.simulation_frame = parent_frame.frames["visual_frame"]
-
-        # Initialize the pen on the screen which draws the simulation.
-        self.simulation_frame.penSpawn()
 
         # Initialise parameters relating to the drawing.
         self.play_animation = None
@@ -63,6 +65,7 @@ class FrameCSVDisplay(FrameBase):
         self.graph_thread.start()
 
     def handle_graph(self):
+        print("hello")
         with open('muse_data.csv', 'r') as file:    
             csv_reader = csv.reader(file)
 
@@ -71,27 +74,67 @@ class FrameCSVDisplay(FrameBase):
             except StopIteration:
                 self.after(50, self.handle_graph)
 
+            buffer = []
+            
+
             while self.back==False:
                 try:
-                    current_row = next(csv_reader)
+                    while(len(buffer) < 256 and self.back==False):
+                        current_row = next(csv_reader)
 
-                    # Convert the elements to float before calculating the average
-                    current_row = [float(value) for value in current_row]
+                        # Convert the elements to float
+                        current_row = [float(value) for value in current_row[1:]]
 
-                    # Calculate the average of the current row of data.
-                    avg = sum(current_row) / 4
+                        buffer.append(current_row)
+
+                        # Calculate the average of the current row of data.
+                        avg = sum(current_row) / 4
+
+                        # Increment the position of the slider and the current row to be accessed.
+                        self.plus_csv(1)
+
+                        self.plot_graph(current_row)
+                        time.sleep(0.01)
+
+                    # calculate psd from buffer
 
                     # Draw the next row of data. Retrieve whether the user is currently blinking.
-                    self.blink = self.simulation_frame.penLoop(avg, self.blink)
 
-                    # Increment the position of the slider and the current row to be accessed.
-                    self.plus_csv(1)
+                    thread = Thread(target=self.simulation_frame.penLoop)
+                    thread.start()
 
-                    self.plot_graph(current_row)
-                    time.sleep(0.01)
+                    self.calculatePSD(buffer)
+
+                    buffer = []
+                    
+
                 except StopIteration:
                     # If there is no next row, sleep or perform other desired actions
                     time.sleep(0.1)  # Sleep for 0.1 second
+
+                except KeyboardInterrupt:
+                    print('Closing!')
+
+
+    def calculatePSD(self, buffer):
+                # Convert buffer to a numpy array
+                buffer_array = np.array(buffer)
+
+                # Transpose the array to have channels in columns
+                buffer_array = np.transpose(buffer_array)
+
+                # Calculate PSD for each channel
+                freqs, psd = signal.welch(buffer_array, fs=256)
+
+                # Calculate alpha, beta, and theta bands
+                alpha_band = np.mean(psd[:, (freqs >= 8) & (freqs <= 12)], axis=1)
+                beta_band = np.mean(psd[:, (freqs >= 12) & (freqs <= 30)], axis=1)
+                theta_band = np.mean(psd[:, (freqs >= 4) & (freqs <= 8)], axis=1)
+
+                # Print the calculated values
+                print("Alpha:", np.mean(alpha_band))
+                print("Beta:", np.mean(beta_band))
+                print("Theta:", np.mean(theta_band))
 
 
     def create_text(self):
@@ -164,6 +207,28 @@ class FrameCSVDisplay(FrameBase):
         self.back=True
         self.simulation_frame.penSpawn()
         self.graph_thread.join()
+
+        cwd = os.getcwd()
+
+        # save the csv
+        src_dir = cwd
+        src_file = 'muse_data.csv'
+        dest_dir = cwd + '/CSVs'
+        # Get the current date and time
+        current_datetime = datetime.now()
+        date_time_string = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+
+        # Build the destination file path
+        dest_file = f"{date_time_string}.csv"
+
+        # Build the source and destination file paths
+        src_path = os.path.join(src_dir, src_file)
+        dest_path = os.path.join(dest_dir, dest_file)
+
+        # Copy the file and rename it
+        shutil.copy(src_path, dest_path)
+
+        
         self.frame.change_csv_frame("csv list")
 
 
@@ -281,23 +346,3 @@ class FrameCSVDisplay(FrameBase):
         # Update the scrollbar to include the newly calculated region.
         self.canvas.config(scrollregion=(0, 0, max_x, max_y))
 
-
-    def change_frame(self,frame):
-        """
-        Change the currently hosted frame. Delete all active threads. Reset the pen on the simulation.
-        """
-
-        # Reset the position of the pen and delete the line currently drawn.
-        self.simulation_frame.penStop()
-        self.simulation_frame.penSpawn()
-
-        # Get a list of active threads
-        active_threads = enumerate()
-
-        # End all active threads.
-        for thread in active_threads:
-            if(thread.name != "MainThread"):
-                thread.join()
-
-        # Change frame to the specified frame.
-        self.visual_window.change_csv_frame(frame)

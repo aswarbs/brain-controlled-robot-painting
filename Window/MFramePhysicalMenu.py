@@ -43,6 +43,24 @@ class FramePhysicalMenu(FrameBase):
         self.pack_propagate(0)
 
 
+    def attempt_connection(self):
+        """
+        Create a thread which attempts to connect to the UR3e arm.
+        """
+
+        # connect button is turned orange
+        # create a thread that runs launch file
+        # on another page:
+        # once the launch file has printed robot connected, prompt user to enter ip into tablet
+        # confirm button, goes back to main screen and connect button is turned green
+
+        self.connection_button.config(bg="orange")
+
+        self.connection_thread = Thread(target=self.run_connection_command)
+        self.connection_thread.start()
+
+
+
 
     def create_program_screen(self):
         """

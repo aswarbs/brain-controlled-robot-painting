@@ -85,7 +85,7 @@ class FrameConnectToSensor(FrameBase):
         info = inlet.info()
 
         # Get sampling frequency, for muse2 sampling frequency = 256
-        fs = int(info.nominal_srate())
+        fs = 256
 
         # writing to the txt file 
         with open("muse_data.csv", mode = 'w', newline = '') as file:
@@ -122,8 +122,6 @@ class FrameConnectToSensor(FrameBase):
                 with open("muse_data.csv", mode = "a", newline = '') as file:
                     # Write to file in a new line
                     writer = csv.writer(file)
-
-                    print(row_data)
 
                     # write the data to the file
                     writer.writerow(row_data)

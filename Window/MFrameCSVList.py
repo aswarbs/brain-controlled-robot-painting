@@ -266,7 +266,7 @@ class FrameCSVList(FrameBase):
             
             for row in csv_reader:
                 # Select columns 2 to 5 (indexes 1 to 4) from the row and convert to floats
-                selected_columns = [float(value) for value in row[1:5]]
+                selected_columns = [float(value) for value in row[0:5]]
                 
                 csv_writer.writerow(selected_columns)
 
