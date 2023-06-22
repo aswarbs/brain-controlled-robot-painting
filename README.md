@@ -177,15 +177,6 @@ Note: These steps will work wirelessly, but to eliminate connectivity issues, th
 2.	Now, power on the robot. 
 
 
-
-<div style="text-align:center">
-    <img src="URCAP_images/Picture1.png" alt="Power on robot" width="500" height="300" />
-</div>
-<div style="text-align:center">
-    <img src="URCAP_images/Picture2.jpg" alt="Power on robot" width="500" height="300" />
-</div>
-
-
 3.	Launch the calibration file to calibrate the robot:
 Note: your robot may be running on a different IP.
 <div align="center">
