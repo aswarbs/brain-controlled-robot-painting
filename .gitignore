@@ -1,4 +1,6 @@
-catkin_ws
+catkin_ws/*
+!catkin_ws/src/universal_robot/ur3e_moveit_config/plan_moves.py
+
 __pycache__
 Window/__pycache__
-!catkin_ws/src/universal_robot/ur3e_moveit_config/plan_moves.py
+
