@@ -29,7 +29,6 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
 
   Brain Controlled Robot Painting is a robotic installation designed to create paintings based on
   the participant's brain activity data. The project uses the EEG Muse 2 band to collect the
