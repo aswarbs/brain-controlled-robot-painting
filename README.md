@@ -90,9 +90,9 @@ To get a local copy up and running follow these simple example steps.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+This project is intended to entertain young people and introduce them to Computer Science. It is a fun, interactive demonstration of how robotics and brain technology can be combined, and also an exploration in the role technology can play in creating unique art.
 
-[label](Assets/linkedin_video.mp4)
+[label](Assets/bcrp.mp4)
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
