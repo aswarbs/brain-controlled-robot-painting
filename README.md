@@ -69,7 +69,7 @@ To get a local copy up and running follow these simple example steps.
 
 ### Installation
 
-### 2.1.	Hardware Requirements
+#### Hardware Requirements
 
 This project requires access to the following hardware:
 
@@ -92,9 +92,7 @@ This project requires access to the following hardware:
 - A USB-C to USB converter (Optional): Some Mac machines have no USB port. If you are dual booting on a Mac, you may need a converter to boot the Ubuntu image.
 
 
-## 3.0.	Setting up and Running the Program
-
-### 3.1.	Installing the Required Drivers:
+#### Installing the Required Drivers:
 
 1.	Source the ROS workspace:
 
@@ -131,7 +129,7 @@ This project requires access to the following hardware:
 
 
 
-## 3.2.	Creating a Catkin Workspace:
+#### Creating a Catkin Workspace:
 
 1.	Update your package index:
 <div align="center">
@@ -164,7 +162,7 @@ This project requires access to the following hardware:
       catkin_make
 </div>
 
-## 3.3.	Calibrating the Robot:
+#### Calibrating the Robot:
 
 Note: These steps will work wirelessly, but to eliminate connectivity issues, the arm should be connected to the device using Ethernet.
 
@@ -199,7 +197,7 @@ Note: your robot may be running on a different IP.
 When the terminal outputs “[calibration_correction-2] process has finished clearly”, press ctrl-c to exit.
 
 
-## 3.4.	Creating a Launch File:
+#### Creating a Launch File:
 
 1.	Enter the src folder of your catkin workspace.
 <div align="center">
@@ -256,7 +254,7 @@ When the terminal outputs “[calibration_correction-2] process has finished cle
 
 
 
-## 3.5.	Adding relevant files
+#### Adding relevant files
 In order to run the program successfully, you need to paste some files into the catkin_ws.
 1.	Navigate to: brain-controlled-robot-painting/catkin_ws/src/universal_robot/ur3e_moveit_config
 2.	From git you can download plan_moves.py
@@ -264,13 +262,13 @@ In order to run the program successfully, you need to paste some files into the 
 4.	From git you can also download ur3e.srdf
 5.	In the catkin_ws navigate to: brain-controlled-robot-painting/catkin_ws/src/universal_robot/ur3e_moveit_config/config and replace the contents of the existing ur3e.srdf.
 
-## 3.6.	Connecting to the Robot:
+#### Connecting to the Robot:
 
 Prerequisites
 -	(Optional): the arm should be connected to the device using Ethernet. This will eliminate connectivity issues.
 -	If you are not using an Ethernet connection, the robot and device should be on the same WiFi network.
 
-### 3.6.1.	Finding your IP Address
+##### Finding your IP Address
 
 If you already know your IP address, skip this step.
 
@@ -281,7 +279,7 @@ If you already know your IP address, skip this step.
 5.	Click the cog button next to the active connection for the IP address.
 6.	The IP address is in the form xxx.xxx.xxx.xxx.
 
-### 3.6.2.	Changing the External Control IP Address
+#### Changing the External Control IP Address
 
 1.	Change the external control IP to your IP address on the robot tablet. Go to the Installation tab at the top pf the tablet, and then navigate to URCaps and then External Control.
 <div style="text-align:center">
@@ -290,7 +288,7 @@ If you already know your IP address, skip this step.
 
  
 
-3.6.3.	Launching the Robot
+#### Launching the Robot
 
 1.	Run the launch file on your device.
 <div align="center">
@@ -325,30 +323,22 @@ Now, the connection is established, and you are ready to read the brain data.
 *Note*: If using the GUI, you can navigate to the Physical Program Menu and follow the steps there, rather than using terminal.
 
 
-## 4.0.	Troubleshooting
+#### Troubleshooting
 
 Here are a list of common issues we have faced with the program, and steps to fix them.
 
-### 4.1.	Connecting to the Muse Sensor
+#### Connecting to the Muse Sensor
 
 If the Muse sensor will not connect to the device, try these steps:
 -	Ensure the sensor is powered on.
 -	Ensure the Muse sensor is not connected to another device: If the Muse is connected to a device, the lights located at the end of the sensor will be solid. If the Muse is not connected to a device, the lights will be flashing on and off. 
 
 
-### 4.2.	Connecting to the Arm
+#### Connecting to the Arm
 
 If the UR3e will not connect to the device, try these steps:
 -	Try pinging the robot, using the terminal command “ping” followed by the IP address of the robot, e.g. ping 10.0.1.1. If this fails, the robot and device are not connected the same network. Solve this issue by ensuring that the device is connected to the same WiFi network as the robot.
 -	If the robot keeps disconnecting, try using an Ethernet cable.
-
-
-
-
-
-
-
-
 
 
 <!-- USAGE EXAMPLES -->
