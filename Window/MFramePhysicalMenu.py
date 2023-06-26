@@ -42,6 +42,14 @@ class FramePhysicalMenu(FrameBase):
         # Disable the frame from resizing.
         self.pack_propagate(0)
 
+    def penLoop(self):
+        """Passes the epoch to the plan_moves class"""
+        pass
+
+    def penStop(self):
+        """Pauses the physical program"""
+        pass
+
 
     def attempt_connection(self):
         """
@@ -83,7 +91,7 @@ class FramePhysicalMenu(FrameBase):
         options_frame.config(bg="white")
         
         # Create a back button which navigates to the Main Menu.
-        Button(options_frame, text="Back", command= lambda:self.change_frame_content(self.main_window.change_frame("main menu")),**self.button_style).pack(side=LEFT, expand=TRUE, pady=5)
+        Button(options_frame, text="Back", command= lambda:self.go_back(),**self.button_style).pack(side=LEFT, expand=TRUE, pady=5)
 
         # Create a Connection button which attempts initial connection to the UR3e arm.
         self.connection_button = Button(options_frame, text="Attempt Connection", command= lambda:self.attempt_connection(),**self.button_style)
@@ -121,14 +129,27 @@ class FramePhysicalMenu(FrameBase):
 
         return frame
     
+    def go_back(self):
+        os.chdir(self.original_directory)
+        self.change_frame_content(self.main_window.change_frame("main menu"))
     
-
-
+    
 
 
     def create_help_frame(self):
         """
         Create a help frame which prompts the user to create a catkin workspace.
+        """
+
+
+        """
+        TODO: 
+
+        THIS WILL BE FOR INITIAL CONNECTION
+
+        RUN ALL COMMANDS TO CREATE CATKIN_WS AND STUFF
+
+        
         """
 
         # Create a frame to hold the content of the Help screen.
@@ -405,12 +426,25 @@ class FramePhysicalMenu(FrameBase):
                 if output:
                     print(output)
 
+
+                    """
+                    TODO
+
+                    GREEN : SUCCESS MESSAGE
+
+                    RED : ABORTED
+
+                    
+                    """
+
                     # GET THE SUCCESS MESSAGE
 
                     """if "Robot mode is now RUNNING" in output:
                         # SUCCESS!
                         self.connection_button.config(bg="green")
                         os.chdir(self.original_directory)
+
+
 
                         break"""
             except OSError:

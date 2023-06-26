@@ -13,6 +13,9 @@ class FrameCSVList(FrameBase):
 
     def __init__(self, master:Tk, main_window, program_window, **args):
 
+         # Retrieve the instance of the simulation frame where the brain data will be displayed.
+        self.simulation_frame = program_window.frames["visual_frame"]
+
         # Set a global variable specifying the frame this subframe is being held in.
         self.program_window = program_window
 
@@ -148,12 +151,12 @@ class FrameCSVList(FrameBase):
         # Create a label prompting the user to delete files.
         Label(self.frame, text="Delete", **self.secondary_label_style).grid(row=0,column=4, pady=15, sticky = EW, padx=20)
 
+        self.button_list = []
 
-        # For each CSV in the directory,
-        for file in self.file_info_list:
+        for x in range(0, len(self.file_info_list)):
             
             # Display the information about the CSV.
-            self.display_row(file)
+            self.display_row(self.file_info_list[x], x)
 
             
         # Update the scroll region of the canvas
@@ -166,9 +169,6 @@ class FrameCSVList(FrameBase):
         options_frame = Frame(self, bg="white")
         options_frame.pack(side="bottom", fill="x")
 
-        # Create a back button, navigating the user to the Main Menu.
-        Button(options_frame, text= "Back", command=lambda:self.parent_window.change_frame("main menu"), **self.button_style).pack(expand=True, side="left", pady=5)
-
         # Create an import button, allowing the user to import files.
         Button(options_frame, text="Import File", **self.button_style, command=self.import_csv).pack(expand=True, side="left",pady=5)
 
@@ -177,16 +177,18 @@ class FrameCSVList(FrameBase):
 
         
 
-    def display_row(self, file):
+    def display_row(self, file, index):
         """
         Display a row of information about a CSV.
         """
             
         # Create a function for each button, allowing the user to select that CSV to display.
-        change_function = self.create_csv_function(file["name"], file["extension"])
+        change_function = self.create_csv_function(file["name"], file["extension"], index)
 
         # Display a button containing the name of the current CSV.
-        Button(self.frame, text= file["name"] , **self.button_style, command=change_function).grid(row=self.row_num, column=0, sticky=NSEW, padx=20)
+        button = Button(self.frame, text= file["name"] , **self.button_style, command=change_function)
+        button.grid(row=self.row_num, column=0, sticky=NSEW, padx=20)
+        self.button_list.append(button)
 
         # Display a label containing the file extension.
         Label(self.frame, text= file["extension"],**self.secondary_label_style).grid(row=self.row_num, column=1, sticky=NSEW, padx=20)
@@ -236,7 +238,7 @@ class FrameCSVList(FrameBase):
         """
         return lambda: self.delete_file(frame, row, file["name"], file["extension"], canvas)
     
-    def create_csv_function(self, name, extension):
+    def create_csv_function(self, name, extension, index):
         """
         Create a unique function for each CSV, navigating to the Display screen with the chosen CSV as the argument.
         """
@@ -248,29 +250,20 @@ class FrameCSVList(FrameBase):
         file_path = os.path.join(self.directory_path, file_name)
 
         # Navigate to the Display screen with the current CSV as an argument.
-        return lambda:self.store_new_csv(file_path)
+        return lambda:self.store_new_csv(file_path, index)
     
-    def store_new_csv(self, file_path):
-        # Clear the new file
-        with open("muse_data.csv", 'w', newline=''):
-            pass
-        
-        # Copy data from the old file to the new file, writing only columns 2 to 5 and converting to floats
-        with open(file_path, 'r') as old_file, open("muse_data.csv", 'a', newline='') as new_file:
-            csv_reader = csv.reader(old_file)
-            csv_writer = csv.writer(new_file)
+    def store_new_csv(self, file_path, index):
 
-            # Skip the first line
-            next(csv_reader)
-        
-            
-            for row in csv_reader:
-                # Select columns 2 to 5 (indexes 1 to 4) from the row and convert to floats
-                selected_columns = [float(value) for value in row[0:5]]
-                
-                csv_writer.writerow(selected_columns)
 
-        self.program_window.change_csv_frame("csv display")
+
+        # so only one button is green
+        for x in self.button_list:
+            x.config(bg = "#42c4ee")
+
+        self.button_list[index].config(bg="green")
+        self.simulation_frame.store_csv(file_path)
+
+        # now tell waiting screen to turn its button blue
 
     def delete_file(self, frame, row, name, extension, canvas):
         """

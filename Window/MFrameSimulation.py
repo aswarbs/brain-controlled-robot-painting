@@ -8,21 +8,13 @@ class FrameSimulation(FrameBase):
     """
     A frame to allow the user to apply a simulation of the pen's trajectory using a specified CSV.
     """
-    def __init__(self, master: Tk, main_window):
+    def __init__(self, master: Tk, main_window, parent_window, **args):
         super().__init__(master, main_window)
         self.pack_propagate(0)
         self.configure(highlightthickness=1, highlightbackground="black")
         
-        self.color_index = 0  # set initial colour to red
-        self.colors = [  # will change upon blinking
-            "red",
-            "orange",
-            "yellow",
-            "green",
-            "light blue",
-            "blue",
-            "purple"
-        ]
+        self.color_index = 0 
+        self.colors = parent_window.frames["filters_frame"].colours
         
         self.forward = 3  # default speed of line
         self.stop = False
@@ -34,8 +26,6 @@ class FrameSimulation(FrameBase):
         self.pen = turtle.RawTurtle(self.canvas)  # create pen in canvas 
         self.penSpawn()  # spawns in top left corner
         
-        print("hello")
-    
     def penStop(self):
         """
         Stops the simulation on press of the pause button.
@@ -49,7 +39,7 @@ class FrameSimulation(FrameBase):
         self.pen.clear()
         self.pen.speed(1)
         self.pen.width(2)
-        self.pen.color('red')
+        self.pen.color(self.colors[0])
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
         x = canvas_width / 2
@@ -70,7 +60,7 @@ class FrameSimulation(FrameBase):
         self.color_index = (self.color_index + 1) % len(self.colors)  # goes to next colour in rainbow
         self.pen.color(self.colors[self.color_index])
     
-    def penLoop(self):
+    def penLoop(self, mapped_rotations):
         """
         The operations performed by the pen on every loop.
         """

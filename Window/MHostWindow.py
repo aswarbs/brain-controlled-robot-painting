@@ -32,6 +32,8 @@ class HostWindow:
         "csv list": FrameCSVList,
         "csv display": FrameCSVDisplay,
         "connect to sensor": FrameConnectToSensor,
+        "simulation": FrameSimulation,
+        "waiting screen": FrameWaitingScreen,
         }
 
     def change_frame(self, new_frame_name, **args):

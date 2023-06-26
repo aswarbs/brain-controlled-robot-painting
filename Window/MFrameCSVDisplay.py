@@ -9,6 +9,7 @@ import shutil
 from datetime import datetime
 import numpy as np
 from scipy import signal
+from math import pi
 
 """
 TODO:
@@ -30,10 +31,15 @@ class FrameCSVDisplay(FrameBase):
         # Retrieve the instance of the simulation frame where the brain data will be displayed.
         self.simulation_frame = parent_frame.frames["visual_frame"]
 
+        # CHECK IF THIS IS VIRTUAL OR PHYSICAL
+        self.class_type = self.simulation_frame.__class__.__name__
+        
+
         # Initialise parameters relating to the drawing.
         self.play_animation = None
         self.blink = False
         self.back=False
+        self.destroy = False
 
 
         # Initialise the current frame instance.
@@ -65,7 +71,6 @@ class FrameCSVDisplay(FrameBase):
         self.graph_thread.start()
 
     def handle_graph(self):
-        print("hello")
         with open('muse_data.csv', 'r') as file:    
             csv_reader = csv.reader(file)
 
@@ -77,9 +82,9 @@ class FrameCSVDisplay(FrameBase):
             buffer = []
             
 
-            while self.back==False:
+            while self.destroy == False:
                 try:
-                    while(len(buffer) < 256 and self.back==False):
+                    while(len(buffer) < 256 and self.back==False and self.destroy == False):
                         current_row = next(csv_reader)
 
                         # Convert the elements to float
@@ -87,26 +92,25 @@ class FrameCSVDisplay(FrameBase):
 
                         buffer.append(current_row)
 
-                        # Calculate the average of the current row of data.
-                        avg = sum(current_row) / 4
-
                         # Increment the position of the slider and the current row to be accessed.
                         self.plus_csv(1)
 
                         self.plot_graph(current_row)
                         time.sleep(0.01)
 
-                    # calculate psd from buffer
+                    if(self.back == False):
 
-                    # Draw the next row of data. Retrieve whether the user is currently blinking.
+                        # Draw the next row of data..
 
-                    thread = Thread(target=self.simulation_frame.penLoop)
-                    thread.start()
+                        mapped_rotations = self.calculatePSD(buffer)
 
-                    self.calculatePSD(buffer)
+                        thread = Thread(target=self.simulation_frame.penLoop, args=(mapped_rotations,))
+                        thread.start()
 
-                    buffer = []
-                    
+                        
+
+                        buffer = []
+                        
 
                 except StopIteration:
                     # If there is no next row, sleep or perform other desired actions
@@ -131,10 +135,28 @@ class FrameCSVDisplay(FrameBase):
                 beta_band = np.mean(psd[:, (freqs >= 12) & (freqs <= 30)], axis=1)
                 theta_band = np.mean(psd[:, (freqs >= 4) & (freqs <= 8)], axis=1)
 
-                # Print the calculated values
-                print("Alpha:", np.mean(alpha_band))
-                print("Beta:", np.mean(beta_band))
-                print("Theta:", np.mean(theta_band))
+                alpha = np.mean(alpha_band)
+                beta = np.mean(beta_band)
+                theta = np.mean(theta_band)
+
+                # Map alpha, beta, and theta values to rotation range
+                max_alpha = np.max(alpha_band)
+                mapped_alpha = (alpha / max_alpha) * (pi/2) - (pi/4)
+
+                max_beta = np.max(beta_band)
+                mapped_beta = (beta / max_beta) * (pi/2) - (pi/4)
+
+                max_theta = np.max(theta_band)
+                mapped_theta = (theta / max_theta) * (pi/2) - (pi/4)
+
+                # Create an array of mapped rotations
+                mapped_rotations = [mapped_alpha, mapped_beta, mapped_theta]
+                print(mapped_rotations)
+
+
+                return mapped_rotations
+
+
 
 
     def create_text(self):
@@ -195,17 +217,35 @@ class FrameCSVDisplay(FrameBase):
         # Create a subframe to hold the buttons.
         self.buttons_frame = Frame(self)
 
+        self.play_image = PhotoImage(file='./Assets/play.png')
+        Button(self.buttons_frame, image=self.play_image, command=lambda:self.play_csv(), **self.image_style).pack(side=LEFT)
+
+        self.pause_image = PhotoImage(file='./Assets/pause.png')
+        Button(self.buttons_frame, image=self.pause_image, command=lambda:self.pause_csv(), **self.image_style).pack(side=LEFT)
+
 
         # Create a back button which allows the user to navigate the the list of CSVs.
         self.back_button = Button(self.buttons_frame, text="Back", **self.button_style, command=lambda:self.go_back())
         self.back_button.pack(side="left", fill="both", expand=True)
+        
+
+        
 
         self.buttons_frame.pack(side="bottom", fill="x")
 
+    def play_csv(self):
+        self.back=False
+        pass
+
+    def pause_csv(self):
+        self.back = True
+        pass
+
     def go_back(self):
         # reset simulation
-        self.back=True
-        self.simulation_frame.penSpawn()
+        self.destroy=True
+
+        
         self.graph_thread.join()
 
         cwd = os.getcwd()
@@ -228,8 +268,10 @@ class FrameCSVDisplay(FrameBase):
         # Copy the file and rename it
         shutil.copy(src_path, dest_path)
 
-        
+        self.frame.change_simulation_frame("waiting screen")
         self.frame.change_csv_frame("csv list")
+        
+        
 
 
     
@@ -243,29 +285,6 @@ class FrameCSVDisplay(FrameBase):
         # Update the position of the vertical line
         x = self.canvas.coords(self.vertical_line)[0] + amount
         self.canvas.coords(self.vertical_line, x, -50, x, 500)
-
-
-    
-
-    def play_csv(self):
-        """
-        Plays the current CSV, incrementing the slider and starting the associated simulation.
-        """
-
-        self.paused=False
-
-
-
-    def pause_csv(self):
-        """
-        Pauses the CSV, pausing the slider and the associated simulation.
-        """
-
-        self.paused=True
-        self.simulation_frame.penStop()
-
-
-
 
 
 

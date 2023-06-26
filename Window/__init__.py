@@ -5,6 +5,7 @@ from .MCSVHandler import CSVHandler
 from .MFrameFiltersWindow import FrameFiltersWindow
 from .MFrameCSVList import FrameCSVList
 from .MFrameCSVDisplay import FrameCSVDisplay
+from .MFrameWaitingScreen import FrameWaitingScreen
 from .MFrameSimulation import FrameSimulation
 from .MFrameConnectToSensor import FrameConnectToSensor
 from .MFrameMainMenu import FrameMainMenu
@@ -20,6 +21,7 @@ __all__ = ['FrameBase',
            'FrameFiltersWindow',
            'FrameCSVList',
            'FrameCSVDisplay',
+           'FrameWaitingScreen',
            'FrameSimulation',
            'FrameConnectToSensor',
            'FrameMainMenu', 
