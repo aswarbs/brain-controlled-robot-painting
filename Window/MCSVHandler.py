@@ -10,8 +10,6 @@ class CSVHandler():
 
         
 
-
-
 def clear_csv(file_path):
     """
     Delete all preexisting data from a file.

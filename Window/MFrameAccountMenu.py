@@ -7,7 +7,7 @@ class FrameAccountMenu(FrameBase):
     Contains functionality to edit the account.
     """
 
-    def __init__(self, master:Tk, main_window):
+    def __init__(self, master:Tk, main_window) -> None:
         super().__init__(master, main_window)
 
         self.widgets["start"] = Button(self, text = "back", command = lambda:main_window.change_frame("main menu"), **self.button_style)

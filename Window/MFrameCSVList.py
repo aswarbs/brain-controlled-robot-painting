@@ -187,23 +187,23 @@ class FrameCSVList(FrameBase):
 
         # Display a button containing the name of the current CSV.
         button = Button(self.frame, text= file["name"] , **self.button_style, command=change_function)
-        button.grid(row=self.row_num, column=0, sticky=NSEW, padx=20)
+        button.grid(row=self.row_num, column=0, sticky=NSEW, padx=20, pady=2)
         self.button_list.append(button)
 
         # Display a label containing the file extension.
-        Label(self.frame, text= file["extension"],**self.secondary_label_style).grid(row=self.row_num, column=1, sticky=NSEW, padx=20)
+        Label(self.frame, text= file["extension"],**self.secondary_label_style).grid(row=self.row_num, column=1, sticky=NSEW, padx=20, pady=2)
 
         # Display a label containing the time the file was last modified.
-        Label(self.frame, text= file["modification_time"], **self.secondary_label_style).grid(row=self.row_num, column=2, sticky=NSEW, padx=20)
+        Label(self.frame, text= file["modification_time"], **self.secondary_label_style).grid(row=self.row_num, column=2, sticky=NSEW, padx=20, pady=2)
 
         # Display a label containing the length of the file.
-        Label(self.frame, text= file["length"], **self.secondary_label_style).grid(row=self.row_num, column=3, sticky=NSEW, padx=20)
+        Label(self.frame, text= file["length"], **self.secondary_label_style).grid(row=self.row_num, column=3, sticky=NSEW, padx=20, pady=2)
 
         # Create a function allowing the user to delete the current file.
         delete_function = self.create_delete_function(self.row_num, self.frame, file, self.canvas)
 
         # Display a button allowing the user to delete the current file.
-        Button(self.frame, image=self.delete_image, command=delete_function, **self.image_style).grid(row=self.row_num, column=4, sticky=NSEW, padx=20)
+        Button(self.frame, image=self.delete_image, command=delete_function, **self.image_style).grid(row=self.row_num, column=4, sticky=NSEW, padx=20, pady=2)
 
         # Increment the current row of data to be displayed.
         self.row_num+=1

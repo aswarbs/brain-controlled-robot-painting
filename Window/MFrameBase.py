@@ -8,9 +8,8 @@ class FrameBase(Frame):
     to maintain a constant style throughout the app.
     """
 
-
     # Constructor
-    def __init__(self, master: Tk, parent_window):
+    def __init__(self: "FrameBase", master: Tk, parent_window) -> None:
 
         # Initialise global styles for tkinter objects
         self.init_styles()
@@ -35,7 +34,7 @@ class FrameBase(Frame):
         
 
 
-    def init_styles(self):
+    def init_styles(self: "FrameBase") -> None:
         """
         Initialise the styles used throughout the program.
         """
@@ -103,10 +102,17 @@ class FrameBase(Frame):
             
         }
 
+        self.dropdown_style = {
+            "bg":'white', # background colour
+            "fg":'black', # foreground colour
+            "activebackground":'gray', # active bg colour
+            "activeforeground":'white', # active fg colour
+            "relief":'solid' # button style
+        }
 
 
 
-    def forget_frame(self):
+    def forget_frame(self: "FrameBase") -> None:
         """
         Forget all subframes in a frame, then forget the frame itself.
         """
