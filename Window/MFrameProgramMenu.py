@@ -93,6 +93,9 @@ class FrameProgramMenu(FrameBase):
         self.frames["visual_frame"] = frame(self.frames["right_frame"], self.main_window, self, **args)
         self.frames["visual_frame"].pack(in_=self.frames["right_frame"],fill="both", expand=True)
 
+    def get_trajectory(self):
+        return self.frames["filters_frame"].selected_item
+
         
         
 

@@ -14,19 +14,20 @@ class FrameFiltersWindow(FrameBase):
 
         self.buttons = []
         self.colours = ["red", "yellow", "green", "blue", "purple"]
+        self.remove_image = PhotoImage(file='./Assets/remove.png')
 
-
-        filter_frame = Frame(self)
-        filter_frame.config(bg="white")
+        self.filter_frame = Frame(self)
+        self.filter_frame.config(bg="white")
+        self.selected_item = "None"
 
         self.chosen_filters = []
 
 
-        self.display_filters(filter_frame)
+        self.display_filters(self.filter_frame)
 
-        self.display_chosen_filters(filter_frame)
+        self.display_chosen_filters(self.filter_frame)
 
-        filter_frame.pack(fill=BOTH, expand=TRUE)
+        self.filter_frame.pack(fill=BOTH, expand=TRUE)
 
         self.display_colours_and_dropdown()
 
@@ -85,7 +86,7 @@ class FrameFiltersWindow(FrameBase):
         list_filters_frame.config(bg="white")
 
 
-        Label(list_filters_frame, text="Choose Filters to Apply:", **self.secondary_label_style).pack(side=TOP, pady=10)
+        Label(list_filters_frame, text="Choose Filters to Apply:", **self.secondary_label_style).pack(side=TOP, pady=10,)
 
         for name in filters:
             self.display_row(name, list_filters_frame)
@@ -115,13 +116,24 @@ class FrameFiltersWindow(FrameBase):
 
         current_label_frame = Frame(parent_frame)
         current_label_frame.config(bg="white")
+        
 
         # Display a button containing the name of the current filter.
         label = Label(current_label_frame, text=str(index) + ". " + name, **self.secondary_label_style)
         label.pack(side=LEFT, pady=2)
 
+        # Display a button allowing the user to get information about the current filter.
+        Button(current_label_frame, image=self.remove_image, command=lambda:self.remove(index), **self.image_style).pack(side=LEFT, padx=2)
+
+
         current_label_frame.pack(side=TOP)
 
+    def remove(self, index):
+        del self.chosen_filters[index-1]
+
+        self.chosen_filters_frame.destroy()
+
+        self.display_chosen_filters(self.filter_frame)
 
         
 
@@ -169,7 +181,7 @@ class FrameFiltersWindow(FrameBase):
 
 
     def handle_selection(self, selected_item):
-        print("Selected item:", selected_item)
+        self.selected_item = selected_item
 
 
 

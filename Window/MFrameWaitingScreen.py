@@ -67,5 +67,3 @@ class FrameWaitingScreen(FrameBase):
                 selected_columns = [float(value) for value in row[0:5]]
                 
                 csv_writer.writerow(selected_columns)
-
-        
