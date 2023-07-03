@@ -37,17 +37,21 @@ class FrameWaitingScreen(FrameBase):
         self.parent_frame.change_simulation_frame("simulation")
         self.parent_frame.change_csv_frame("csv display")
 
+
+    def allow_progression(self):
+        """Allow the start button to start the simulation once a CSV has been selected."""
+        self.start_button.config(bg="#42c4ee")
+        self.start_button.config(command=lambda:self.start_simulation())
+
         
 
 
 
     def store_csv(self, file_path):
         """
-        Allow the start button to start the simulation once a CSV has been selected.
         Copy the CSV into the muse_data csv.
         """
-        self.start_button.config(bg="#42c4ee")
-        self.start_button.config(command=lambda:self.start_simulation())
+
 
         # Clear the new file
         with open("muse_data.csv", 'w', newline=''):

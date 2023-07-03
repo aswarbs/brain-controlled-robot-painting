@@ -7,15 +7,9 @@ import csv
 import os
 import shutil
 from datetime import datetime
+import mne
 import numpy as np
-from scipy import signal
-from math import pi
-
-"""
-TODO:
-- This frame communicates with the simulation frame. This should be separated, so that this frame also works with the physical program.
-"""
-
+from mne.time_frequency import psd_array_welch
 
 class FrameCSVDisplay(FrameBase):
     """
@@ -31,15 +25,14 @@ class FrameCSVDisplay(FrameBase):
         # Retrieve the instance of the simulation frame where the brain data will be displayed.
         self.simulation_frame = parent_frame.frames["visual_frame"]
 
-        # CHECK IF THIS IS VIRTUAL OR PHYSICAL
-        self.class_type = self.simulation_frame.__class__.__name__
-        
 
         # Initialise parameters relating to the drawing.
         self.play_animation = None
         self.blink = False
         self.back=False
         self.destroy = False
+
+        
 
 
         # Initialise the current frame instance.
@@ -71,91 +64,97 @@ class FrameCSVDisplay(FrameBase):
         self.graph_thread.start()
 
     def handle_graph(self):
-        with open('muse_data.csv', 'r') as file:    
-            csv_reader = csv.reader(file)
+        buffer = []
 
-            try:
-                next(csv_reader)  # Skip header row
-            except StopIteration:
-                self.after(50, self.handle_graph)
 
-            buffer = []
-            
+        while(True):
 
-            while self.destroy == False:
+            with open('muse_data.csv', 'r') as file:
+                csv_reader = csv.reader(file)
+
                 try:
-                    while(len(buffer) < 256 and self.back==False and self.destroy == False):
-                        current_row = next(csv_reader)
-
-                        # Convert the elements to float
-                        current_row = [float(value) for value in current_row[1:]]
-
-                        buffer.append(current_row)
-
-                        # Increment the position of the slider and the current row to be accessed.
-                        self.plus_csv(1)
-
-                        self.plot_graph(current_row)
-                        time.sleep(0.01)
-
-                    if(self.back == False):
-
-                        # Draw the next row of data..
-
-                        mapped_rotations = self.calculatePSD(buffer)
-
-                        thread = Thread(target=self.simulation_frame.penLoop, args=(mapped_rotations,))
-                        thread.start()
-
-                        
-
-                        buffer = []
-                        
-
+                    next(csv_reader)  # Skip header row
                 except StopIteration:
-                    # If there is no next row, sleep or perform other desired actions
-                    time.sleep(0.1)  # Sleep for 0.1 second
+                    # try again after delay if at end of data
+                    self.after(50, self.handle_graph)
 
-                except KeyboardInterrupt:
-                    print('Closing!')
+                while self.destroy == False:
+                    try:
+                        while (self.back == False and self.destroy == False and len(buffer) < 256):
+                            current_row = next(csv_reader)
+                            # Convert the elements to float
+                            current_row = [float(value) for value in current_row[1:]]
+                            buffer.append(current_row)
 
+                            # Increment the position of the slider and the current row to be accessed.
+                            self.plus_csv(1)
 
-    def calculatePSD(self, buffer):
-                # Convert buffer to a numpy array
-                buffer_array = np.array(buffer)
+                            print("hello")
 
-                # Transpose the array to have channels in columns
-                buffer_array = np.transpose(buffer_array)
+                            self.plot_graph(current_row)
+                            time.sleep(0.01)
 
-                # Calculate PSD for each channel
-                freqs, psd = signal.welch(buffer_array, fs=256)
+                        if (self.back == False):
+                            pass
+                            # Draw the next row of data..
+                            # mapped_rotations = self.calculatePSD(buffer)
 
-                # Calculate alpha, beta, and theta bands
-                alpha_band = np.mean(psd[:, (freqs >= 8) & (freqs <= 12)], axis=1)
-                beta_band = np.mean(psd[:, (freqs >= 12) & (freqs <= 30)], axis=1)
-                theta_band = np.mean(psd[:, (freqs >= 4) & (freqs <= 8)], axis=1)
+                                
+                            map = self.calculate_psd(buffer)
+                            buffer = []
 
-                alpha = np.mean(alpha_band)
-                beta = np.mean(beta_band)
-                theta = np.mean(theta_band)
-
-                # Map alpha, beta, and theta values to rotation range
-                max_alpha = np.max(alpha_band)
-                mapped_alpha = (alpha / max_alpha) * (pi/2) - (pi/4)
-
-                max_beta = np.max(beta_band)
-                mapped_beta = (beta / max_beta) * (pi/2) - (pi/4)
-
-                max_theta = np.max(theta_band)
-                mapped_theta = (theta / max_theta) * (pi/2) - (pi/4)
-
-                # Create an array of mapped rotations
-                mapped_rotations = [mapped_alpha, mapped_beta, mapped_theta]
-                print(mapped_rotations)
+                            thread = Thread(target=self.simulation_frame.penLoop, args=(map,))
+                            thread.start()
+                            time.sleep(0.01)
 
 
-                return mapped_rotations
+                    except StopIteration:
+                        # If there is no next row, sleep or perform other desired actions
+                        self.after(50, self.handle_graph)
 
+    def calculate_psd(self, data):
+        sfreq = 256  # Replace with your actual sampling frequency
+        freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'theta': (4, 7)}
+
+        info = mne.create_info(ch_names=['TP9', 'AF7', 'AF8', 'TP10'], sfreq=sfreq)
+        data_array = np.array(data)  # Convert data to numpy array
+        subset_raw = mne.io.RawArray(data_array.T, info)
+        psd, freqs = psd_array_welch(subset_raw.get_data(), sfreq=sfreq, fmin=0.5, fmax=sfreq / 2, n_fft=256)
+
+        # Extract PSD values for each channel and frequency range
+        channel_names = subset_raw.ch_names
+        freq_band_psd = {}
+        for freq_band, (fmin, fmax) in freq_ranges.items():
+            freq_mask = (freqs >= fmin) & (freqs <= fmax)
+            psd_band = np.mean(psd[:, freq_mask], axis=1)
+            freq_band_psd[freq_band] = psd_band
+
+        self.map_psd_to_rotation(freq_band_psd)
+
+
+    def map_psd_to_rotation(self, freq_band_psd):
+        # Calculate the mean values
+        mean_alpha = np.mean(freq_band_psd['alpha'])
+        mean_beta = np.mean(freq_band_psd['beta'])
+        mean_theta = np.mean(freq_band_psd['theta'])
+
+        # Calculate the mapped values from the means
+        mapped_values = {}
+        for freq_band, mean_psd in zip(['alpha', 'beta', 'theta'], [mean_alpha, mean_beta, mean_theta]):
+            mapped_values[freq_band] = np.interp(mean_psd, (np.min(list(freq_band_psd.values())), np.max(list(freq_band_psd.values()))), (-np.pi/4, np.pi/4))
+
+        # Print the mapped values
+        map = []
+        for freq_band, mapped_psd in mapped_values.items():
+            map.append(mapped_psd)
+
+        return map
+
+
+        
+
+
+        
 
 
 

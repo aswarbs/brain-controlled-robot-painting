@@ -3,6 +3,8 @@ from tkinter import *
 import random
 from math import cos, sin, pi
 from Window import *
+import numpy as np
+import math
 
 class FrameSimulation(FrameBase):
     """
@@ -30,9 +32,13 @@ class FrameSimulation(FrameBase):
         self.min_angle = -180
         self.max_angle = 180
 
+        self.current_angle = 0
+
         self.trajectory = self.master_window.get_trajectory()
         if(self.trajectory == "Square"):
             self.initialise_square()
+
+        self.penLoop([])
 
 
 
@@ -86,19 +92,34 @@ class FrameSimulation(FrameBase):
             self.rotate_right
         ]
 
+        # instead of random movements, base them on mapped_rotations.
+        # each rotation -pi/4 < rotation < pi/4
+        # 3 rotations - need to convert to degrees
 
-        angle = random.uniform(self.min_angle, self.max_angle)
-        self.pen.setheading(angle)
-        self.move_forward(10)
+        """alpha_degrees = np.rad2deg(mapped_rotations[0])
+        beta_degrees = np.rad2deg(mapped_rotations[1])
+        theta_degrees = np.rad2deg(mapped_rotations[2])"""
+
+        # use these angles in the drawing
+
+        alpha = random.uniform(-45, 45) / 2
+        beta = random.uniform(-45, 45)
+        theta = random.uniform(-45, 45)
+
+        steps = int((abs(theta) / theta) * 10)
+
+        self.move_forward(abs(alpha))
+        self.pen.setheading(beta + self.current_angle)
 
         # PERFORM TRAJECTORY BOUNDARY CHECK
         if(self.trajectory == "Square"):
             if(self.perform_square() == True):
+                print("switch")
                 self.switch_side()
 
     def initialise_square(self):
 
-        self.BOUNDARY = 100
+        self.BOUNDARY = 150
         self.ending_x = 0
         self.ending_y = 0
 
@@ -143,8 +164,8 @@ class FrameSimulation(FrameBase):
         self.small_y_boundary = min(self.starting_y, self.ending_y) - self.BOUNDARY
         self.large_y_boundary = max(self.starting_y, self.ending_y) + self.BOUNDARY
 
-        self.min_angle = self.current_angle - 0
-        self.max_angle = self.current_angle + 0
+        self.min_angle = self.current_angle - 90
+        self.max_angle = self.current_angle + 90
         
     
 

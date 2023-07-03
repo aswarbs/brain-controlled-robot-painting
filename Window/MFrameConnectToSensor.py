@@ -19,6 +19,7 @@ class FrameConnectToSensor(FrameBase):
 
         # Initialise the Frame
         self.visual_window = visual_window
+        self.simulation_frame = visual_window.frames["visual_frame"]
         super().__init__(master, main_window)
         self.pack_propagate(0)
 
@@ -64,7 +65,6 @@ class FrameConnectToSensor(FrameBase):
     def write_live_data(self):
         """
         Read live data from the Brain Sensor, row by row.
-        Return the current row of brain data from the sensor.
         """
 
         # Clear existing data in the muse_data.csv file
@@ -100,7 +100,11 @@ class FrameConnectToSensor(FrameBase):
         # Amount to 'shift' the start of each next consecutive epoch
         SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
 
+        self.acquire_data(inlet, SHIFT_LENGTH, fs)
 
+
+    def acquire_data(self, inlet, SHIFT_LENGTH, fs):
+        
         # Getting Data
         try:
             # The following loop acquires data
@@ -130,13 +134,7 @@ class FrameConnectToSensor(FrameBase):
             print('Closing!')
 
         except IndexError:
-            self.after(10,self.write_live_data)
-
-
-
-
-
-
+            self.after(10,self.acquire_data(inlet, SHIFT_LENGTH, fs))
 
 
 
@@ -204,6 +202,7 @@ class FrameConnectToSensor(FrameBase):
 
         self.address = address
         self.connected = None
+
 
         # Create a new thread to connect to the Muse sensor.
         self.connection_thread = Thread(target=self.stream_muse)
@@ -360,11 +359,10 @@ class FrameConnectToSensor(FrameBase):
         Destroy all threads currently running and redirect the user to the Display CSV frame.
         """
 
+        self.simulation_frame.allow_progression()
+
+        print("hi")
+
+
         self.writing_thread = Thread(target=self.write_live_data)
         self.writing_thread.start()
-
-        # destroy threads (except the streaming thread)
-        self.refresh_thread.join()
-
-        # change frame to display the live data.
-        self.visual_window.change_csv_frame(frame)
