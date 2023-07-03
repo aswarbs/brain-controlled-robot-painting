@@ -1,6 +1,7 @@
 
 from Window import *
 from tkinter import *
+import os
 
 class FrameMainMenu(FrameBase):
     """ 
@@ -23,6 +24,7 @@ class FrameMainMenu(FrameBase):
 
 
         # Create account logo
+        print(os.getcwd())
         self.account_logo = PhotoImage(file='./Assets/account_logo.png')
         # Create account button
         self.widgets["account_button"] = Button(self, image=self.account_logo, **self.image_style, command = lambda:main_window.change_frame("account menu")).grid(row=0, column=0,pady=10, padx=10, sticky=NW)

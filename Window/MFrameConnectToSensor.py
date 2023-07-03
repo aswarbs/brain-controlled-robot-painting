@@ -112,7 +112,8 @@ class FrameConnectToSensor(FrameBase):
                         
                 # Acquire data
                 # Obtain EEG data from the LSL stream
-                eeg_data, timestamp = inlet.pull_chunk(timeout = 1, max_samples = int(SHIFT_LENGTH * fs))
+                eeg_data, timestamp = inlet.pull_chunk(timeout = 0, max_samples = int(SHIFT_LENGTH * fs))
+
 
                 # Getting the data for each channel
                 ch_data_tp9 = np.array(eeg_data)[:, 0]
@@ -121,7 +122,7 @@ class FrameConnectToSensor(FrameBase):
                 ch_data_tp10 = np.array(eeg_data)[:, 3]
 
 
-                row_data = [np.mean(ch_data_tp9), np.mean(ch_data_af7), np.mean(ch_data_af8), np.mean(ch_data_tp10)]
+                row_data = [timestamp, np.mean(ch_data_tp9), np.mean(ch_data_af7), np.mean(ch_data_af8), np.mean(ch_data_tp10)]
 
                 with open("muse_data.csv", mode = "a", newline = '') as file:
                     # Write to file in a new line
@@ -134,7 +135,7 @@ class FrameConnectToSensor(FrameBase):
             print('Closing!')
 
         except IndexError:
-            self.after(10,self.acquire_data(inlet, SHIFT_LENGTH, fs))
+            self.after(10,lambda:self.acquire_data(inlet, SHIFT_LENGTH, fs))
 
 
 

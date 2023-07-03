@@ -76,7 +76,7 @@ class FrameCSVDisplay(FrameBase):
                     next(csv_reader)  # Skip header row
                 except StopIteration:
                     # try again after delay if at end of data
-                    self.after(50, self.handle_graph)
+                    time.sleep(0.01)
 
                 while self.destroy == False:
                     try:
@@ -108,7 +108,7 @@ class FrameCSVDisplay(FrameBase):
 
                     except StopIteration:
                         # If there is no next row, sleep or perform other desired actions
-                        self.after(50, self.handle_graph)
+                        time.sleep(0.01)
 
     def calculate_psd(self, data):
         sfreq = 256  # Replace with your actual sampling frequency
