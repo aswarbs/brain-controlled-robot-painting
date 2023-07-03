@@ -1,0 +1,8 @@
+prefix=/home/amber/Documents/BCRP/catkin_ws/devel
+
+Name: cms_ur_launch
+Description: Description of cms_ur_launch
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
