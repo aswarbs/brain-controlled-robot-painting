@@ -272,10 +272,6 @@ If you already know your IP address, skip this step.
 #### Changing the External Control IP Address
 
 1.	Change the external control IP to your IP address on the robot tablet. Go to the Installation tab at the top pf the tablet, and then navigate to URCaps and then External Control.
-<div style="text-align:center">
-    <img src="URCAP_images/Picture3.png" alt="IP" width="500" height="300" />
-</div>
-
  
 
 #### Launching the Robot
@@ -290,10 +286,6 @@ If you already know your IP address, skip this step.
 
 
 2.	Start the tsoutsi-pc-control program on the robot tablet, by navigating to Run > Load Program> tsoutsi-pc-control.
-<div style="text-align:center">
-    <img src="URCAP_images/Picture4.png" alt="IP" width="500" height="300" />
-</div>
-
 
 
 You should see “Robot connected to reverse interface. Ready to receive control commands.” in your terminal. 
