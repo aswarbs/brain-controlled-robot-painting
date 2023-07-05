@@ -5,6 +5,9 @@ from math import cos, sin, pi
 from Window import *
 import numpy as np
 import math
+from threading import Thread
+import csv
+import time
 
 class FrameSimulation(FrameBase):
     """
@@ -38,7 +41,31 @@ class FrameSimulation(FrameBase):
         if(self.trajectory == "Square"):
             self.initialise_square()
 
-        self.penLoop([])
+        thread = Thread(target=self.readLoop)
+        thread.start()
+
+
+    def readLoop(self):
+
+
+        with open('mapped_rotations.csv', 'r') as file:
+            csv_reader = csv.reader(file)
+
+            while True:
+                try:
+                    current_row = next(csv_reader)
+                    # Convert the elements to float
+                    current_row = [float(value) for value in current_row]
+
+                    self.penLoop(current_row)
+
+                except StopIteration:
+                    # If there is no next row, sleep or perform other desired actions
+                    time.sleep(0.01)
+                    # You can also break the loop if you don't want to continue reading the file
+                    # break
+
+        
 
 
 
@@ -81,6 +108,7 @@ class FrameSimulation(FrameBase):
         """
         The operations performed by the pen on every loop.
         """
+
         operations_list = [
             self.move_left,
             self.move_right,
@@ -96,26 +124,23 @@ class FrameSimulation(FrameBase):
         # each rotation -pi/4 < rotation < pi/4
         # 3 rotations - need to convert to degrees
 
-        """alpha_degrees = np.rad2deg(mapped_rotations[0])
+        alpha_degrees = np.rad2deg(mapped_rotations[0])
         beta_degrees = np.rad2deg(mapped_rotations[1])
-        theta_degrees = np.rad2deg(mapped_rotations[2])"""
-
+        theta_degrees = np.rad2deg(mapped_rotations[2])
+        
         # use these angles in the drawing
 
-        alpha = random.uniform(-45, 45) / 2
-        beta = random.uniform(-45, 45)
-        theta = random.uniform(-45, 45)
-
-        steps = int((abs(theta) / theta) * 10)
-
-        self.move_forward(abs(alpha))
-        self.pen.setheading(beta + self.current_angle)
+        self.move_forward(abs(alpha_degrees))
+        self.pen.setheading(beta_degrees)
 
         # PERFORM TRAJECTORY BOUNDARY CHECK
         if(self.trajectory == "Square"):
             if(self.perform_square() == True):
                 print("switch")
                 self.switch_side()
+
+        self.master_window.signal_done()
+
 
     def initialise_square(self):
 

@@ -1,7 +1,6 @@
 from tkinter import ttk
 
 from .MFrameBase import FrameBase
-from .MCSVHandler import CSVHandler
 from .MFrameFiltersWindow import FrameFiltersWindow
 from .MFrameCSVList import FrameCSVList
 from .MFrameCSVDisplay import FrameCSVDisplay
@@ -17,7 +16,6 @@ from .MHostWindow import HostWindow
 
 
 __all__ = ['FrameBase',
-           'CSVHandler', 
            'FrameFiltersWindow',
            'FrameCSVList',
            'FrameCSVDisplay',

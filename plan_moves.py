@@ -37,17 +37,26 @@ class RobotCommands():
                                                     queue_size=20)
         
         
-        plan_joints = [0] * 6
+        self.plan_joints = [0] * 6
 
-        plan_joints = self.group.get_current_joint_values()
+        self.plan_joints = self.group.get_current_joint_values()
 
         self.return_to_home()
 
-        self.plan_joints = self.move_to_initial_position()
+        self.move_to_initial_position()
 
-        self.plan_joints = self.move_down(plan_joints)
-        self.plan_goal(plan_joints)
+        self.move_down()
+        self.plan_goal()
 
+        while(True):
+            # read from mapped_rotations to receive current rotation
+
+            # draw line
+
+            # when done, signal to parent window that we are done
+            pass
+
+        print("FINISH")
 
 
     def penLoop(self, rotations):
@@ -74,6 +83,8 @@ class RobotCommands():
 
         self.plan_goal()
 
+        
+
 
 
 
@@ -82,11 +93,11 @@ class RobotCommands():
 
         self.plan_joints = self.group.get_current_joint_values()    
 
-        self.plan_joints [0] = pi/2
-        self.plan_joints [1] = 0
-        self.plan_joints [3] = 0
-        self.plan_joints [4] = pi
-        self.plan_joints [5] = pi/4
+        self.plan_joints[0] = pi/2
+        self.plan_joints[1] = 0
+        self.plan_joints[3] = 0
+        self.plan_joints[4] = pi    
+        self.plan_joints[5] = -pi/4
 
         self.plan_goal()
     
@@ -94,46 +105,46 @@ class RobotCommands():
         
     def move_down(self):
 
-        self.plan_joints [1] += pi/4
-        self.plan_joints [2] -= pi/4
+        self.plan_joints[1] += pi/4
+        self.plan_joints[2] -= pi/4
 
     
         
 
     def move_left(self, amount):
 
-        self.plan_joints [0] += amount
-        self.plan_joints [4] -= amount
+        self.plan_joints[0] += amount
+        self.plan_joints[4] -= amount
 
 
 
     def move_forward(self, amount):
 
         self.plan_joints[4] -= amount
-        self.plan_joints [0] -= amount / 8
+        self.plan_joints[0] -= amount / 8
 
 
 
     def rotate_left(self, amount):
 
-        self.plan_joints [0] += amount
+        self.plan_joints[0] += amount
 
 
     def circle_left(self, amount):
 
-        self.plan_joints [4] += amount
+        self.plan_joints[4] += amount
 
 
 
     def return_to_home(self):
         print("return to home")
         self.plan_joints = self.group.get_current_joint_values()
-        self.plan_joints [0] = 0
-        self.plan_joints [1] = -pi/2
-        self.plan_joints [2] = 0
-        self.plan_joints [3] = -pi/2
-        self.plan_joints [4] = 0
-        self.plan_joints [5] = 0
+        self.plan_joints[0] = 0
+        self.plan_joints[1] = -pi/2
+        self.plan_joints[2] = 0
+        self.plan_joints[3] = -pi/2
+        self.plan_joints[4] = 0
+        self.plan_joints[5] = 0
 
         self.plan_goal()
 
@@ -153,11 +164,11 @@ class RobotCommands():
                 self.plan_joints [x] -= 2 * pi
 
         # keep pen on page
-        if(self.plan_joints [0] < pi/4):
-            self.plan_joints [0] += pi/4
+        if(self.plan_joints[0] < pi/4):
+            self.plan_joints[0] += pi/4
 
-        if(self.plan_joints [0] > (3 * pi)/4):
-            self.plan_joints [0] -= pi/4
+        if(self.plan_joints[0] > (3 * pi)/4):
+            self.plan_joints[0] -= pi/4
 
 
         # ADDITIONAL OPTIONAL BOUNDARIES HERE
@@ -172,3 +183,5 @@ class RobotCommands():
 
         # Calling ``stop()`` ensures that there is no residual movement
         self.group.stop()
+
+robot = RobotCommands()

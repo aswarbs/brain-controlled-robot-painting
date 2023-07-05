@@ -66,6 +66,10 @@ class FrameProgramMenu(FrameBase):
 
         self.pack(fill="both", expand=True)
 
+    def signal_done(self):
+        print("RESET BUFFER")
+        self.frames["csv_frame"].reset_buffer()
+
     def change_csv_frame(self, frame_name, **args):
         """
         Change the currently hosted CSV frame.

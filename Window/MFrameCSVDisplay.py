@@ -31,6 +31,11 @@ class FrameCSVDisplay(FrameBase):
         self.blink = False
         self.back=False
         self.destroy = False
+        
+
+        # Clear the new file
+        with open("mapped_rotations.csv", 'w', newline=''):
+            pass
 
         
 
@@ -40,9 +45,6 @@ class FrameCSVDisplay(FrameBase):
 
         # Disable resizing of the current frame.
         self.pack_propagate(0)
-
-        # Create an instance of the CSVHandler class.
-        self.csv_handler = CSVHandler()
 
         # Create the buttons to be displayed on the frame.
         self.create_buttons()
@@ -64,7 +66,9 @@ class FrameCSVDisplay(FrameBase):
         self.graph_thread.start()
 
     def handle_graph(self):
-        buffer = []
+        self.buffer = []
+        written = False
+        self.count = 0
 
 
         while(True):
@@ -80,11 +84,13 @@ class FrameCSVDisplay(FrameBase):
 
                 while self.destroy == False:
                     try:
-                        while (self.back == False and self.destroy == False and len(buffer) < 256):
+                        while (self.back == False):
                             current_row = next(csv_reader)
                             # Convert the elements to float
                             current_row = [float(value) for value in current_row[1:]]
-                            buffer.append(current_row)
+
+                            self.buffer.append(current_row)
+                            self.count += 1
 
                             # Increment the position of the slider and the current row to be accessed.
                             self.plus_csv(1)
@@ -92,23 +98,41 @@ class FrameCSVDisplay(FrameBase):
                             self.plot_graph(current_row)
                             time.sleep(0.01)
 
-                        if (self.back == False):
-                            pass
-                            # Draw the next row of data..
-                            # mapped_rotations = self.calculatePSD(buffer)
+                            if(len(self.buffer) > 256 and written == False):
+                                print("INITIAL")
 
-                                
-                            map = self.calculate_psd(buffer)
-                            buffer = []
+                                self.count = 0
+                                self.reset_buffer()
+                                written = True
 
-                            thread = Thread(target=self.simulation_frame.penLoop, args=(map,))
-                            thread.start()
-                            time.sleep(0.01)
+
+
 
 
                     except StopIteration:
                         # If there is no next row, sleep or perform other desired actions
                         time.sleep(0.01)
+
+
+    def reset_buffer(self):
+        """ once the pen has stopped drawing, send the next command and reset the buffer """
+
+        map = self.calculate_psd(self.buffer)
+
+        self.buffer = self.buffer[self.count:] # remove the first count elements of the array
+        print(len(self.buffer))
+        self.count = 0
+
+        self.write_line_to_csv(map)
+
+        time.sleep(0.01)
+        
+
+    def write_line_to_csv(self, line):
+
+        with open("mapped_rotations.csv", 'a', newline='') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(line)
 
     def calculate_psd(self, data):
         sfreq = 256  # Replace with your actual sampling frequency
@@ -127,7 +151,8 @@ class FrameCSVDisplay(FrameBase):
             psd_band = np.mean(psd[:, freq_mask], axis=1)
             freq_band_psd[freq_band] = psd_band
 
-        self.map_psd_to_rotation(freq_band_psd)
+        map = self.map_psd_to_rotation(freq_band_psd)
+        return map
 
 
     def map_psd_to_rotation(self, freq_band_psd):

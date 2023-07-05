@@ -36,6 +36,7 @@ class FramePhysicalMenu(FrameBase):
         # Initialise a variable describing the current directory.
         self.original_directory = os.getcwd()
 
+
         # Change the content on the frame to the Program Screen.
         self.change_frame_content(self.create_program_screen)
 
@@ -255,7 +256,9 @@ class FramePhysicalMenu(FrameBase):
         ros_command = "source devel/setup.bash && roslaunch cms_ur_launch tsoutsi.launch"
 
         # Change directory to the catkin workspace.
-        os.chdir("catkin_ws")
+        
+        os.chdir("../../..")
+        print(os.getcwd())
 
         master, slave = pty.openpty()
 
@@ -289,28 +292,34 @@ class FramePhysicalMenu(FrameBase):
                     # If the user successfully connected to the robot,
                     if("Robot connected to reverse interface" in output and self.connected==False):
 
+                        print("yes")
+
+                        
                         # Allow the user to continue.
                         self.continue_button.config(bg="#42c4ee")
                         self.continue_button.config(command=lambda:self.change_frame_content(self.create_program_screen))
 
                         # Record that the user has connected to the robot.
                         self.connected = True
+
+                        os.chdir(self.original_directory)
+                        break
+
             
 
 
+                    # If the process has ended, connection has failed.
+                    if "Connection to reverse interface dropped" in output:
+                        # FAIL!
+                        print("yes")
+                        self.connected = False
+                        self.connection_button.config(bg="red")
 
-                        #break
+                        os.chdir(self.original_directory)
             except OSError:
                 break
 
-        # Wait for the process to end.
-        process.wait()
 
-        # If the process has ended, connection has failed.
-        if process.returncode != 0:
-            # FAIL!
-            self.connection_button.config(bg="red")
-            os.chdir(self.original_directory)
 
     
     def wait_for_moveit_completion(self):
@@ -356,7 +365,10 @@ class FramePhysicalMenu(FrameBase):
         moveit_command = "source devel/setup.bash && roslaunch ur3e_moveit_config moveit_planning_execution.launch"
 
         # Change directory to the catkin workspace in order to run ros commands.
-        os.chdir("catkin_ws")
+
+       
+        
+        os.chdir("../../..")
 
         master, slave = pty.openpty()
 
@@ -374,26 +386,24 @@ class FramePhysicalMenu(FrameBase):
                 # Read the current output from the command.
                 output = os.read(master, 1024).decode()
 
-                # If a line has been read,
-                if output:
+                # If the output is the success output,
+                if "You can start planning now!" in output:
 
-                    # If the output is the success output,
-                    if "You can start planning now!" in output:
+                    # SUCCESS!
+                    self.moveit_succeeded = True
+                    os.chdir(self.original_directory)
+                    break
 
-                        # SUCCESS!
-                        self.moveit_succeeded = True
-                        break
+                # If the process has ended, it has failed.
+                if process.returncode == 1:
+                    # FAIL!
+                    self.launch_button.config(bg="red")
+                    self.moveit_succeeded = False
+                    os.chdir(self.original_directory)
+
             except OSError:
                 break
 
-        # Wait for the process to end.
-        process.wait()
-
-        # If the process has ended, it has failed.
-        if process.returncode != 0:
-            # FAIL!
-            self.launch_button.config(bg="red")
-            os.chdir(self.original_directory)
 
 
     
@@ -405,6 +415,8 @@ class FramePhysicalMenu(FrameBase):
 
         program_command = "source devel/setup.bash && rosrun ur3e_moveit_config plan_moves.py"
 
+        os.chdir("../../..")
+
 
         master, slave = pty.openpty()
 
@@ -415,7 +427,6 @@ class FramePhysicalMenu(FrameBase):
             stderr=slave,
             universal_newlines=True
         )
-
         # While the command is running,
         while True:
             try:
@@ -427,35 +438,22 @@ class FramePhysicalMenu(FrameBase):
                     print(output)
 
 
-                    """
-                    TODO
-
-                    GREEN : SUCCESS MESSAGE
-
-                    RED : ABORTED
-
-                    
-                    """
-
-                    # GET THE SUCCESS MESSAGE
-
-                    """if "Robot mode is now RUNNING" in output:
-                        # SUCCESS!
-                        self.connection_button.config(bg="green")
-                        os.chdir(self.original_directory)
+                # Check the return code.
+                if "Done" in output:
+                    # Process ended successfully.
+                    print("Success")
+                    self.launch_button.config(bg="#42c4ee")
+                    os.chdir(self.original_directory)
+                    break
 
 
+                if "ABORTED: CONTROL_FAILED" in output:
+                    # Process failed.
+                    print("Failure")
+                    self.launch_button.config(bg="red")
+                    os.chdir(self.original_directory)
+                    break
 
-                        break"""
             except OSError:
                 break
-
-        # Wait for the process to terminate.
-        process.wait()
-
-        # If the process failed,
-        if process.returncode != 0:
-            # FAIL!
-            self.launch_button.config(bg="red")
-            os.chdir(self.original_directory)
 
