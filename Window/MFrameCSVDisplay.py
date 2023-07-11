@@ -114,6 +114,7 @@ class FrameCSVDisplay(FrameBase):
         self.buffer = self.buffer[self.count:] # remove the first count elements of the array
 
         map = self.calculate_psd(self.buffer)
+        print("map: ", map)
 
         self.count = 0
 
@@ -130,16 +131,13 @@ class FrameCSVDisplay(FrameBase):
 
     def calculate_psd(self, data):
         sfreq = 256  # Replace with your actual sampling frequency
-        freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'theta': (4, 7), 'gamma': (30, 100)}
+        freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'theta': (4, 7)}
 
         
 
         info = mne.create_info(ch_names=['TP9', 'AF7', 'AF8', 'TP10'], sfreq=sfreq)
         data_array = np.array(data)  # Convert data to numpy array
 
-        # Check if any value in the raw data is less than 0 or greater than 50
-        if np.any(data_array < 0) or np.any(data_array > 50):
-            print("blink")
 
 
         subset_raw = mne.io.RawArray(data_array.T, info)
@@ -152,51 +150,58 @@ class FrameCSVDisplay(FrameBase):
             freq_mask = (freqs >= fmin) & (freqs <= fmax)
             psd_band = np.mean(psd[:, freq_mask], axis=1)
             freq_band_psd[freq_band] = psd_band
-        
+
 
         map = self.map_psd_to_rotation(freq_band_psd)
+
+
+        # Additional steps for motion artifact detection
+        motion_artifacts = self.detect_motion_artifacts(data_array)
+        num_motion_artifacts = np.count_nonzero(motion_artifacts)  # Count the number of samples with motion artifacts
+        total_samples = data_array.shape[0]  # Total number of samples
+
+
+        percentage_motion_artifacts = (num_motion_artifacts / total_samples)
+        print("percentage artifacts: ", percentage_motion_artifacts)
+
         return map
 
 
-    def map_psd_to_rotation(self, freq_band_psd):
-        # Calculate the mean values
-        mean_alpha = np.mean(freq_band_psd['alpha'])
-        mean_beta = np.mean(freq_band_psd['beta'])
-        mean_theta = np.mean(freq_band_psd['theta'])
-        mean_gamma = np.mean(freq_band_psd['gamma'])
+    
+    def detect_motion_artifacts(self, data):
+        # Implement your motion artifact detection algorithm here
+        # Return a boolean array indicating the presence of motion artifacts for each sample
+        
+        # Example: Detect motion artifacts based on signal amplitude exceeding a threshold
+        threshold = 50  # Adjust the threshold as needed
+        
+        amplitude = np.abs(data)
+        motion_artifacts = np.max(amplitude, axis=1) > threshold
+        
+        return motion_artifacts
 
+
+    def map_psd_to_rotation(self, freq_band_psd):
+        
         # Calculate the mapped values from the means
         mapped_values = {}
-        for freq_band in ['alpha', 'beta', 'theta', 'gamma']:
+        for freq_band in ['alpha', 'beta', 'theta']:
             min_band = np.min(freq_band_psd[freq_band])
             max_band = np.max(freq_band_psd[freq_band])
-            mean_psd = eval(f"mean_{freq_band}")  # Evaluate mean value dynamically
+            mean_psd = np.mean(freq_band_psd[freq_band])
 
-            # Normalize the mean_psd value between 0 and 1 using Min Max normalization
+            # Normalize the mean_psd value between 0 and 1 using Min-Max normalization
             normalized_value = (mean_psd - min_band) / (max_band - min_band)
 
             # Store the normalized value
             mapped_values[freq_band] = normalized_value
 
-        print("mapped values: ", mapped_values.values())
-        return mapped_values.values()
+        # Return the mapped values as a list
+        return [mapped_values[freq_band] for freq_band in ['alpha', 'beta', 'theta']]
+
+            
 
 
-
-
-
-        # Print the mapped values
-        map = []
-        for freq_band, mapped_psd in mapped_values.items():
-            map.append(mapped_psd)
-
-        return map
-
-
-        
-
-
-        
 
 
 

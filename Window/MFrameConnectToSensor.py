@@ -6,7 +6,6 @@ import subprocess
 from pylsl import StreamInlet, resolve_byprop
 import csv
 import numpy as np
-import time
 
 class FrameConnectToSensor(FrameBase):
     """
@@ -225,7 +224,7 @@ class FrameConnectToSensor(FrameBase):
         )
 
         # While the process is running,
-        while(command.poll() is None): 
+        while command.poll() is None: 
 
             # Retrieve the currently connected Bluetooth device.
             stdoutdata = subprocess.getoutput("hcitool con")

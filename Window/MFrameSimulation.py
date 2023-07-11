@@ -10,6 +10,7 @@ import csv
 import time
 
 class FrameSimulation(FrameBase):
+
     """
     A frame to allow the user to apply a simulation of the pen's trajectory using a specified CSV.
     """
@@ -18,6 +19,8 @@ class FrameSimulation(FrameBase):
         super().__init__(master, main_window)
         self.pack_propagate(0)
         self.configure(highlightthickness=0)
+
+        self.MAX_ANGLE = 360
         
         self.color_index = 0 
         self.colors = parent_window.frames["filters_frame"].colours
@@ -33,10 +36,12 @@ class FrameSimulation(FrameBase):
         self.pen = turtle.RawTurtle(self.canvas)  # create pen in canvas 
         self.penSpawn()  # spawns in top left corner
 
-        self.min_angle = -180
-        self.max_angle = 180
-
         self.current_angle = 0
+
+        self.small_x_boundary = -50
+        self.large_x_boundary = 500
+        self.small_y_boundary = -500
+        self.large_y_boundary = -50
 
         self.trajectory = self.master_window.get_trajectory()
         if(self.trajectory == "Square"):
@@ -55,6 +60,7 @@ class FrameSimulation(FrameBase):
             while True:
                 try:
                     current_row = next(csv_reader)
+
                     # Convert the elements to float
                     current_row = [float(value) for value in current_row]
 
@@ -68,7 +74,13 @@ class FrameSimulation(FrameBase):
 
         
 
-
+    def handle_blink(self):
+        # penup / pendown
+        print("handling blink")
+        if(self.pen.isdown()):
+            self.pen.penup()
+        else:
+            self.pen.pendown()
 
         
     def penStop(self):
@@ -116,13 +128,15 @@ class FrameSimulation(FrameBase):
 
         alpha_percentage = mapped_rotations[0]
         alpha_curvature = int(alpha_percentage * 3) + 1
-        #alpha_curvature = 1
+        print(alpha_curvature)
         # curvature is an int between 1 and 3
 
-        beta_angle = np.rad2deg(mapped_rotations[1]) * 2
+        current_angle = self.pen.heading()
+        beta_angle = mapped_rotations[1] * self.MAX_ANGLE
+        print(beta_angle)
 
 
-        self.forward_amount = np.rad2deg(mapped_rotations[2])
+        self.forward_amount = mapped_rotations[2] * 100
 
 
         # make the angle switch direction each pass
@@ -155,9 +169,14 @@ class FrameSimulation(FrameBase):
 
         # PERFORM TRAJECTORY BOUNDARY CHECK
         if(self.trajectory == "Square"):
-            self.direction *= -1 # oscillate
+            
             if(self.perform_square() == True):
                 self.switch_side()
+
+        self.boundary_check()
+        self.direction *= -1 # oscillate
+
+        print(self.pen.xcor(), self.pen.ycor())
 
         
 
@@ -173,6 +192,13 @@ class FrameSimulation(FrameBase):
         self.current_angle = 90
 
         self.switch_side()
+
+    def boundary_check(self):
+        if(self.pen.xcor() < self.small_x_boundary or self.pen.xcor() > self.large_x_boundary or self.pen.ycor() < self.small_y_boundary or self.pen.ycor() > self.large_y_boundary):
+            self.pen.setheading(self.pen.heading() + 180) # turn pen around
+            self.move_forward(self.forward_amount)
+            print("yes")
+
 
 
     def switch_side(self):
@@ -211,10 +237,9 @@ class FrameSimulation(FrameBase):
         self.small_y_boundary = min(self.starting_y, self.ending_y) - self.BOUNDARY
         self.large_y_boundary = max(self.starting_y, self.ending_y) + self.BOUNDARY
 
-        self.min_angle = (self.current_angle - 45) % 360
-        self.max_angle = (self.current_angle + 45) % 360
         
         self.pen.setheading(self.current_angle)
+        self.MAX_ANGLE = 90
 
 
 
@@ -230,10 +255,7 @@ class FrameSimulation(FrameBase):
                 return True
             
 
-        if(self.pen.xcor() < self.small_x_boundary or self.pen.xcor() > self.large_x_boundary or self.pen.ycor() < self.small_y_boundary or self.pen.ycor() > self.large_y_boundary):
-            self.pen.setheading(self.pen.heading() + 180) # turn pen around
-            self.move_forward(self.forward_amount)
-            print("yes")
+
 
 
         return False
