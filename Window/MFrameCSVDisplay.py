@@ -11,16 +11,22 @@ import mne
 import numpy as np
 from mne.time_frequency import psd_array_welch
 
+# TODO: DETECT MOTION ARTIFACTS.. IF MIN < 0 OR MAX > 40? IN EPOCH ?
+
 class FrameCSVDisplay(FrameBase):
     """
     Display a graph of the chosen CSV to the screen.
     """
+
+    # TODO: 
 
 
     def __init__(self, master:Tk, main_window, parent_frame):
         
         # Initialise the global variable which tracks the instance of Program Menu this frame is contained in.
         self.frame = parent_frame
+
+
         
         # Retrieve the instance of the simulation frame where the brain data will be displayed.
         self.simulation_frame = parent_frame.frames["visual_frame"]
@@ -33,9 +39,7 @@ class FrameCSVDisplay(FrameBase):
         self.destroy = False
         
 
-        # Clear the new file
-        with open("mapped_rotations.csv", 'w', newline=''):
-            pass
+
 
         
 
@@ -71,56 +75,46 @@ class FrameCSVDisplay(FrameBase):
         self.count = 0
 
 
-        while(True):
+        with open('muse_data.csv', 'r') as file:
+            csv_reader = csv.reader(file)
 
-            with open('muse_data.csv', 'r') as file:
-                csv_reader = csv.reader(file)
+            while (self.destroy == False and self.back == False):
 
                 try:
-                    next(csv_reader)  # Skip header row
-                except StopIteration:
-                    # try again after delay if at end of data
+                    current_row = next(csv_reader)
+
+                    
+                    # Convert the elements to float
+                    current_row = [float(value) for value in current_row[1:]]
+
+
+
+                    self.buffer.append(current_row)
+                    self.count += 1
+
+                    # Increment the position of the slider and the current row to be accessed.
+                    self.plus_csv(1)
+
+                    self.plot_graph(current_row)
                     time.sleep(0.01)
 
-                while self.destroy == False:
-                    try:
-                        while (self.back == False):
-                            current_row = next(csv_reader)
-                            # Convert the elements to float
-                            current_row = [float(value) for value in current_row[1:]]
+                    if(len(self.buffer) > 256 and written == False):
 
-                            self.buffer.append(current_row)
-                            self.count += 1
+                        self.count = 0
+                        self.reset_buffer()
+                        written = True
 
-                            # Increment the position of the slider and the current row to be accessed.
-                            self.plus_csv(1)
-
-                            self.plot_graph(current_row)
-                            time.sleep(0.01)
-
-                            if(len(self.buffer) > 256 and written == False):
-                                print("INITIAL")
-
-                                self.count = 0
-                                self.reset_buffer()
-                                written = True
-
-
-
-
-
-                    except StopIteration:
-                        # If there is no next row, sleep or perform other desired actions
-                        time.sleep(0.01)
+                except:
+                    time.sleep(0.01)
 
 
     def reset_buffer(self):
         """ once the pen has stopped drawing, send the next command and reset the buffer """
 
+        self.buffer = self.buffer[self.count:] # remove the first count elements of the array
+
         map = self.calculate_psd(self.buffer)
 
-        self.buffer = self.buffer[self.count:] # remove the first count elements of the array
-        print(len(self.buffer))
         self.count = 0
 
         self.write_line_to_csv(map)
@@ -136,10 +130,18 @@ class FrameCSVDisplay(FrameBase):
 
     def calculate_psd(self, data):
         sfreq = 256  # Replace with your actual sampling frequency
-        freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'theta': (4, 7)}
+        freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'theta': (4, 7), 'gamma': (30, 100)}
+
+        
 
         info = mne.create_info(ch_names=['TP9', 'AF7', 'AF8', 'TP10'], sfreq=sfreq)
         data_array = np.array(data)  # Convert data to numpy array
+
+        # Check if any value in the raw data is less than 0 or greater than 50
+        if np.any(data_array < 0) or np.any(data_array > 50):
+            print("blink")
+
+
         subset_raw = mne.io.RawArray(data_array.T, info)
         psd, freqs = psd_array_welch(subset_raw.get_data(), sfreq=sfreq, fmin=0.5, fmax=sfreq / 2, n_fft=256)
 
@@ -150,6 +152,7 @@ class FrameCSVDisplay(FrameBase):
             freq_mask = (freqs >= fmin) & (freqs <= fmax)
             psd_band = np.mean(psd[:, freq_mask], axis=1)
             freq_band_psd[freq_band] = psd_band
+        
 
         map = self.map_psd_to_rotation(freq_band_psd)
         return map
@@ -160,11 +163,27 @@ class FrameCSVDisplay(FrameBase):
         mean_alpha = np.mean(freq_band_psd['alpha'])
         mean_beta = np.mean(freq_band_psd['beta'])
         mean_theta = np.mean(freq_band_psd['theta'])
+        mean_gamma = np.mean(freq_band_psd['gamma'])
 
         # Calculate the mapped values from the means
         mapped_values = {}
-        for freq_band, mean_psd in zip(['alpha', 'beta', 'theta'], [mean_alpha, mean_beta, mean_theta]):
-            mapped_values[freq_band] = np.interp(mean_psd, (np.min(list(freq_band_psd.values())), np.max(list(freq_band_psd.values()))), (-np.pi/4, np.pi/4))
+        for freq_band in ['alpha', 'beta', 'theta', 'gamma']:
+            min_band = np.min(freq_band_psd[freq_band])
+            max_band = np.max(freq_band_psd[freq_band])
+            mean_psd = eval(f"mean_{freq_band}")  # Evaluate mean value dynamically
+
+            # Normalize the mean_psd value between 0 and 1 using Min Max normalization
+            normalized_value = (mean_psd - min_band) / (max_band - min_band)
+
+            # Store the normalized value
+            mapped_values[freq_band] = normalized_value
+
+        print("mapped values: ", mapped_values.values())
+        return mapped_values.values()
+
+
+
+
 
         # Print the mapped values
         map = []

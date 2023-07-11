@@ -24,6 +24,7 @@ class FrameSimulation(FrameBase):
         
         self.forward = 3  # default speed of line
         self.stop = False
+        self.direction = 1
         
         self.canvas = Canvas(self)
         self.canvas.config(bd=0, highlightthickness=0)
@@ -104,47 +105,68 @@ class FrameSimulation(FrameBase):
         self.color_index = (self.color_index + 1) % len(self.colors)  # goes to next colour in rainbow
         self.pen.color(self.colors[self.color_index])
     
-    def penLoop(self, mapped_rotations):
+    def penLoop(self, mapped_rotations) -> None:
         """
         The operations performed by the pen on every loop.
         """
 
-        operations_list = [
-            self.move_left,
-            self.move_right,
-            self.move_forward,
-            self.move_backward,
-            self.circle_left,
-            self.circle_right,
-            self.rotate_left,
-            self.rotate_right
-        ]
-
         # instead of random movements, base them on mapped_rotations.
-        # each rotation -pi/4 < rotation < pi/4
+        # each rotation between 0 and 1
         # 3 rotations - need to convert to degrees
 
-        alpha_degrees = np.rad2deg(mapped_rotations[0])
-        beta_degrees = np.rad2deg(mapped_rotations[1])
-        theta_degrees = np.rad2deg(mapped_rotations[2])
-        
-        # use these angles in the drawing
+        alpha_percentage = mapped_rotations[0]
+        alpha_curvature = int(alpha_percentage * 3) + 1
+        #alpha_curvature = 1
+        # curvature is an int between 1 and 3
 
-        self.move_forward(abs(alpha_degrees))
-        self.pen.setheading(beta_degrees)
+        beta_angle = np.rad2deg(mapped_rotations[1]) * 2
+
+
+        self.forward_amount = np.rad2deg(mapped_rotations[2])
+
+
+        # make the angle switch direction each pass
+        beta_angle *= self.direction
+        
+
+        angle_per_segment = beta_angle / alpha_curvature
+        forward_per_segment = self.forward_amount / alpha_curvature
+
+        prev_angle = self.current_angle
+
+        
+
+        for current_segment in range(0, alpha_curvature):
+            current_angle = prev_angle + angle_per_segment
+            self.pen.setheading(current_angle)
+            self.move_forward(forward_per_segment)
+            prev_angle = current_angle
+
+        angle = self.current_angle - current_angle
+        angle_per_segment = angle / alpha_curvature
+
+        for current_segment in range(0, alpha_curvature - 1):
+            current_angle = prev_angle + angle_per_segment
+            self.pen.setheading(current_angle)
+            self.move_forward(forward_per_segment)
+            prev_angle = current_angle
+
+
 
         # PERFORM TRAJECTORY BOUNDARY CHECK
         if(self.trajectory == "Square"):
+            self.direction *= -1 # oscillate
             if(self.perform_square() == True):
-                print("switch")
                 self.switch_side()
+
+        
 
         self.master_window.signal_done()
 
 
     def initialise_square(self):
 
-        self.BOUNDARY = 150
+        self.BOUNDARY = 100
         self.ending_x = 0
         self.ending_y = 0
 
@@ -189,17 +211,15 @@ class FrameSimulation(FrameBase):
         self.small_y_boundary = min(self.starting_y, self.ending_y) - self.BOUNDARY
         self.large_y_boundary = max(self.starting_y, self.ending_y) + self.BOUNDARY
 
-        self.min_angle = self.current_angle - 90
-        self.max_angle = self.current_angle + 90
-        
-    
-
+        self.min_angle = (self.current_angle - 45) % 360
+        self.max_angle = (self.current_angle + 45) % 360
         
         self.pen.setheading(self.current_angle)
 
 
 
     def perform_square(self):
+
 
         if(self.changing_x):
 
@@ -208,10 +228,13 @@ class FrameSimulation(FrameBase):
         else:
             if(self.has_coordinate_reached_goal(self.pen.ycor(), self.ending_y, self.increasing)):
                 return True
-
+            
 
         if(self.pen.xcor() < self.small_x_boundary or self.pen.xcor() > self.large_x_boundary or self.pen.ycor() < self.small_y_boundary or self.pen.ycor() > self.large_y_boundary):
-            self.pen.setheading(180 - self.pen.heading()) # turn pen around
+            self.pen.setheading(self.pen.heading() + 180) # turn pen around
+            self.move_forward(self.forward_amount)
+            print("yes")
+
 
         return False
 
@@ -236,32 +259,16 @@ class FrameSimulation(FrameBase):
         """Move the pen forward by the specified amount."""
         self.pen.forward(amount)
     
-    def move_backward(self, amount):
-        """Move the pen backward by the specified amount."""
-        self.pen.backward(amount)
-    
     def move_left(self, amount):
         """Turn the pen left and move forward by the specified amount."""
         self.pen.left(90)
-        self.pen.forward(amount)
-    
-    def move_right(self, amount):
-        """Turn the pen right and move forward by the specified amount."""
-        self.pen.right(90)
         self.pen.forward(amount)
     
     def circle_left(self, amount):
         """Make a small left circle movement with the pen."""
         self.pen.circle(25, amount)
     
-    def circle_right(self, amount):
-        """Make a small right circle movement with the pen."""
-        self.pen.circle(25, -amount)
-    
     def rotate_left(self, amount):
         """Make a large left circle movement with the pen."""
         self.pen.circle(250, amount)
     
-    def rotate_right(self, amount):
-        """Make a large right circle movement with the pen."""
-        self.pen.circle(250, -amount)

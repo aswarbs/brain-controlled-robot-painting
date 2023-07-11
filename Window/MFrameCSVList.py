@@ -13,6 +13,11 @@ class FrameCSVList(FrameBase):
 
     def __init__(self, master:Tk, main_window, program_window, **args):
 
+        # Clear the new file
+        with open("mapped_rotations.csv", 'w', newline=''):
+            pass
+        
+
          # Retrieve the instance of the simulation frame where the brain data will be displayed.
         self.simulation_frame = program_window.frames["visual_frame"]
 
