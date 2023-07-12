@@ -47,26 +47,3 @@ class FrameWaitingScreen(FrameBase):
 
 
 
-    def store_csv(self, file_path):
-        """
-        Copy the CSV into the muse_data csv.
-        """
-
-        # Clear the new file
-        with open("muse_data.csv", 'w', newline=''):
-            pass
-        
-        # Copy data from the old file to the new file, writing only columns 2 to 5 and converting to floats
-        with open(file_path, 'r') as old_file, open("muse_data.csv", 'a', newline='') as new_file:
-            csv_reader = csv.reader(old_file)
-            csv_writer = csv.writer(new_file)
-
-            # Skip the first line
-            next(csv_reader)
-        
-            
-            for row in csv_reader:
-                # Select columns 2 to 5 (indexes 1 to 4) from the row and convert to floats
-                selected_columns = [float(value) for value in row[0:5]]
-                
-                csv_writer.writerow(selected_columns)

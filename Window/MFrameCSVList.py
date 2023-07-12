@@ -18,8 +18,6 @@ class FrameCSVList(FrameBase):
             pass
         
 
-         # Retrieve the instance of the simulation frame where the brain data will be displayed.
-        self.simulation_frame = program_window.frames["visual_frame"]
 
         # Set a global variable specifying the frame this subframe is being held in.
         self.program_window = program_window
@@ -267,8 +265,8 @@ class FrameCSVList(FrameBase):
 
         self.button_list[index].config(bg="green")
         
-        self.simulation_frame.store_csv(file_path)
-        self.simulation_frame.allow_progression()
+        self.program_window.store_csv(file_path)
+        self.program_window.allow_progression()
 
         # now tell waiting screen to turn its button blue
 

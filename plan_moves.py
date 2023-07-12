@@ -48,16 +48,31 @@ class RobotCommands():
         self.move_down()
         self.plan_goal()
 
-        while(True):
-            # read from mapped_rotations to receive current rotation
+        self.readLoop()
 
-            # draw line
 
-            # when done, signal to parent window that we are done
-            pass
+    def readLoop(self):
 
-        print("FINISH")
 
+            with open('mapped_rotations.csv', 'r') as file:
+                csv_reader = csv.reader(file)
+
+                while True:
+                    try:
+                        current_row = next(csv_reader)
+
+                        # Convert the elements to float
+                        current_row = [float(value) for value in current_row]
+
+                        self.penLoop(current_row)
+
+                    except StopIteration:
+                        # If there is no next row, sleep or perform other desired actions
+                        time.sleep(0.01)
+                        # You can also break the loop if you don't want to continue reading the file
+                        # break
+
+            
 
     def penLoop(self, rotations):
 

@@ -235,10 +235,6 @@ class FrameConnectToSensor(FrameBase):
                 # The connection was successful, change the colour of the button to green.
                 self.chosen_button.config(bg="green")
 
-                # Change the colour of the stream button to blue, allowing the user to continue.
-                self.stream_button.config(bg="#42c4ee")
-                self.stream_button.config(command=lambda:self.change_frame("csv display"))
-
         # The connection was unsuccessful, the command returned an error code.
         self.chosen_button.config(bg="red")
 
@@ -344,13 +340,6 @@ class FrameConnectToSensor(FrameBase):
         # Create a refresh button which refreshes the currently available Muse sensors.
         Button(options, text="Refresh", command=self.refresh, **self.button_style).pack(side="left", expand="True",pady=5)
 
-
-        # Create a stream button which allows the user to stream live data once connected to a sensor.
-        self.stream_button = Button(options, text="Stream Data", **self.button_style)
-        self.stream_button.pack(side="left", expand="True",pady=5)
-
-        # Change the colour of the stream button to light grey to signify it is initially not selectable.
-        self.stream_button.config(bg="#d3d3d3")
 
 
 

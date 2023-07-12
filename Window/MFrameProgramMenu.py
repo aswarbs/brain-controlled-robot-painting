@@ -1,5 +1,6 @@
 from tkinter import *
 from Window import *
+import csv
 
 class FrameProgramMenu(FrameBase):
     """
@@ -9,6 +10,7 @@ class FrameProgramMenu(FrameBase):
     def __init__(self, master, main_window, **args):
         self.master = master
         self.main_window = main_window
+        self.type = args['type']
 
         super().__init__(master, main_window)
 
@@ -22,7 +24,7 @@ class FrameProgramMenu(FrameBase):
         self.frames["right_frame"] = Frame(self.frames["bottom_frame"])
 
         # If the user is running the virtual frame,
-        if args["type"] == "virtual":
+        if self.type == "virtual":
             # Set the visual frame to the simulation.
             self.frames["visual_frame"] = FrameWaitingScreen(self.frames["right_frame"], self.main_window, self, **args)
 
@@ -65,6 +67,49 @@ class FrameProgramMenu(FrameBase):
         self.frames["visual_frame"].pack(fill="both", expand=True)
 
         self.pack(fill="both", expand=True)
+
+    def allow_progression(self):
+        """Allow the start button to start the simulation once a CSV has been selected."""
+
+        if(self.type == "virtual"):
+            self.frames["visual_frame"].start_button.config(bg="#42c4ee")
+            self.frames["visual_frame"].start_button.config(command=lambda:self.start_simulation())
+        else:
+            self.frames["visual_frame"].chosen_csv == True
+
+    def start_simulation(self):
+
+        
+        if(self.type == "virtual"):    
+            self.change_simulation_frame("simulation")
+
+        # ADD CODE TO CHANGE PHYSICAL SCREEN HERE!
+        self.change_csv_frame("csv display")
+
+    def store_csv(self, file_path):
+        """
+        Copy the CSV into the muse_data csv.
+        """
+
+        # Clear the new file
+        with open("muse_data.csv", 'w', newline=''):
+            pass
+        
+        # Copy data from the old file to the new file, writing only columns 2 to 5 and converting to floats
+        with open(file_path, 'r') as old_file, open("muse_data.csv", 'a', newline='') as new_file:
+            csv_reader = csv.reader(old_file)
+            csv_writer = csv.writer(new_file)
+
+            # Skip the first line
+            next(csv_reader)
+        
+            
+            for row in csv_reader:
+                # Select columns 2 to 5 (indexes 1 to 4) from the row and convert to floats
+                selected_columns = [float(value) for value in row[0:5]]
+                
+                csv_writer.writerow(selected_columns)
+
 
     def signal_done(self):
         print("RESET BUFFER")

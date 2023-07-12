@@ -10,10 +10,6 @@ import time
 """
 TODO:
 
-- WAIT UNTIL THE USER HAS SELECTED A CSV (MAKE A SELECT CSV FRAME, REPLACE.)
-- PASS THE CSV INTO THIS CLASS
-- PASS THE CSV TO PLAN_MOVES
-
 - CREATE THE HELP SCREEN
 """
 
@@ -32,6 +28,9 @@ class FramePhysicalMenu(FrameBase):
 
         # Initialise a boolean describing if the user is connected to the UR3e arm.
         self.connected = False
+
+        # Initialise a boolean describing if the user has chosen a CSV
+        self.chosen_csv = False
 
         # Initialise a variable describing the current directory.
         self.original_directory = os.getcwd()
@@ -99,25 +98,28 @@ class FramePhysicalMenu(FrameBase):
         self.connection_button.pack(side=LEFT, expand=TRUE, pady=5)
 
         # Create a launch button which initially has no function.
-        self.launch_button = Button(options_frame, text="Launch Program",**self.button_style)
+        self.start_button = Button(options_frame, text="Launch Program",**self.button_style)
+
+        # launch program can only work if the user has selected a csv and connected to the arm.
 
         # If the user is not connected to the UR3e arm,
-        if(self.connected == False):
+        if(not(self.connected and self.chosen_csv)):
             # Set the colour of the launch button to Grey, disabling the user from launching the program.
-            self.launch_button.config(bg="#D3D3D3")
+            self.start_button.config(bg="#D3D3D3")
 
         # If the user is connected to the UR3e arm,
         else:
+            print(self.connected, self.chosen_csv)
             # Set the colour of the launch button to Blue.
-            self.launch_button.config(bg="#42c4ee")
+            self.start_button.config(bg="#42c4ee")
 
             # Assign the button a command to attempt to run the program.
-            self.launch_button.config(command=lambda:self.run_physical_program())
+            self.start_button.config(command=lambda:self.run_physical_program())
 
             # Set the colour of the connection button to green: the user has connected.
             self.connection_button.config(bg="green")
 
-        self.launch_button.pack(side=LEFT, expand=TRUE, pady=5)
+        self.start_button.pack(side=LEFT, expand=TRUE, pady=5)
         options_frame.pack(side=BOTTOM, fill=X)
 
         # Create a Title label for the frame.
