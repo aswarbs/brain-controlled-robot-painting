@@ -98,7 +98,7 @@ class FrameCSVDisplay(FrameBase):
                     self.plot_graph(current_row)
                     time.sleep(0.01)
 
-                    if(len(self.buffer) > 256 and written == False):
+                    if(len(self.buffer) > 512 and written == False):
 
                         self.count = 0
                         self.reset_buffer()
