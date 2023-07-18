@@ -31,7 +31,7 @@ class FrameProgramMenu(FrameBase):
         # If the user is running the physical program,
         else:
             # Set the visual frame to the physical program menu.
-            self.frames["visual_frame"] = FramePhysicalMenu(self.frames["right_frame"], self.main_window)
+            self.frames["visual_frame"] = FramePhysicalMenu(self.frames["right_frame"], self.main_window, self)
 
         # Initialize the CSV frame as a list of possible CSVs.
         self.frames["csv_frame"] = FrameCSVList(master, main_window, self)
@@ -75,16 +75,14 @@ class FrameProgramMenu(FrameBase):
             self.frames["visual_frame"].start_button.config(bg="#42c4ee")
             self.frames["visual_frame"].start_button.config(command=lambda:self.start_simulation())
         else:
-            self.frames["visual_frame"].chosen_csv == True
+            self.frames["visual_frame"].connection_button.config(bg="#42c4ee")
+            self.frames["visual_frame"].connection_button.config(command= lambda:self.frames["visual_frame"].attempt_connection())
+            
 
     def start_simulation(self):
-
-        
-        if(self.type == "virtual"):    
-            self.change_simulation_frame("simulation")
-
-        # ADD CODE TO CHANGE PHYSICAL SCREEN HERE!
         self.change_csv_frame("csv display")
+        self.change_simulation_frame("simulation")
+
 
     def store_csv(self, file_path):
         """
@@ -112,7 +110,6 @@ class FrameProgramMenu(FrameBase):
 
 
     def signal_done(self):
-        print("RESET BUFFER")
         self.frames["csv_frame"].reset_buffer()
 
     def change_csv_frame(self, frame_name, **args):

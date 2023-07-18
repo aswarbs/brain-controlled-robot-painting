@@ -58,11 +58,14 @@ class RobotCommands():
                 csv_reader = csv.reader(file)
 
                 while True:
+                    print("reading...")
                     try:
                         current_row = next(csv_reader)
 
                         # Convert the elements to float
                         current_row = [float(value) for value in current_row]
+
+                        print("current row: ", current_row)
 
                         self.penLoop(current_row)
 
@@ -71,40 +74,37 @@ class RobotCommands():
                         time.sleep(0.01)
                         # You can also break the loop if you don't want to continue reading the file
                         # break
+                        print("WAITING")
 
             
 
     def penLoop(self, rotations):
 
         
-        alpha_rotation = rotations[0]
-        beta_rotation = rotations[1]
-        theta_rotation = rotations[2]
+        alpha_rotation = rotations[0] * (pi/4)
+        beta_rotation = rotations[1] * (pi/4)
+        theta_rotation = rotations[2] * (pi/4)
+
 
         # Alpha
         # Controls Rotation
-        self.plan_joints = self.rotate_left(alpha_rotation / 4)
-        self.plan_joints = self.circle_left(alpha_rotation / 4)
-
+        self.rotate_left(alpha_rotation/ 4)
+        self.circle_left(alpha_rotation / 4)
 
         # Beta
         # Used to control left and right
-        self.plan_joints = self.move_left(beta_rotation)
-
+        self.move_left(beta_rotation)
 
         # Theta
         # Controls up & downs
-        self.plan_joints = self.move_forward(theta_rotation)
+        self.move_forward(theta_rotation)
 
         self.plan_goal()
 
-        
-
-
+        print("done")
 
 
     def move_to_initial_position(self):    
-        print("initial")  
 
         self.plan_joints = self.group.get_current_joint_values()    
 
@@ -112,7 +112,7 @@ class RobotCommands():
         self.plan_joints[1] = 0
         self.plan_joints[3] = 0
         self.plan_joints[4] = pi    
-        self.plan_joints[5] = -pi/4
+        self.plan_joints[5] = pi/4
 
         self.plan_goal()
     
@@ -122,7 +122,6 @@ class RobotCommands():
 
         self.plan_joints[1] += pi/4
         self.plan_joints[2] -= pi/4
-
     
         
 
@@ -152,7 +151,6 @@ class RobotCommands():
 
 
     def return_to_home(self):
-        print("return to home")
         self.plan_joints = self.group.get_current_joint_values()
         self.plan_joints[0] = 0
         self.plan_joints[1] = -pi/2
@@ -172,11 +170,11 @@ class RobotCommands():
         # check overflow
         for x in range(0, len(self.plan_joints )):
 
-            if(self.plan_joints [x] < -(2 * pi)):
-                self.plan_joints [x] += 2 * pi
+            if(self.plan_joints [x] < -(pi)):
+                self.plan_joints [x] += pi
 
-            if(self.plan_joints [x] > (2 * pi)):
-                self.plan_joints [x] -= 2 * pi
+            if(self.plan_joints [x] > (pi)):
+                self.plan_joints [x] -= pi
 
         # keep pen on page
         if(self.plan_joints[0] < pi/4):
@@ -194,9 +192,15 @@ class RobotCommands():
 
         self.check_boundaries()
 
-        self.group.go(self.plan_joints , wait=True)
+        print("joints: ", self.plan_joints)
+
+        self.group.go(self.plan_joints, wait=True)
+
+        print("gone")
 
         # Calling ``stop()`` ensures that there is no residual movement
         self.group.stop()
+
+        print("stopped!")
 
 robot = RobotCommands()

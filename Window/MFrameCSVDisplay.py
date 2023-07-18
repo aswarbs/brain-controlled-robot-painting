@@ -111,6 +111,8 @@ class FrameCSVDisplay(FrameBase):
     def reset_buffer(self):
         """ once the pen has stopped drawing, send the next command and reset the buffer """
 
+        print("reset buffer")
+
         self.buffer = self.buffer[self.count:] # remove the first count elements of the array
 
         map = self.calculate_psd(self.buffer)
@@ -130,13 +132,18 @@ class FrameCSVDisplay(FrameBase):
             writer.writerow(line)
 
     def calculate_psd(self, data):
-        sfreq = 256  # Replace with your actual sampling frequency
+        # Sampling frequency of Muse band
+        sfreq = 256  
+
+        # Recorded frequency ranges to be used in the drawing
         freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'theta': (4, 7)}
 
         
 
         info = mne.create_info(ch_names=['TP9', 'AF7', 'AF8', 'TP10'], sfreq=sfreq)
-        data_array = np.array(data)  # Convert data to numpy array
+
+        # Convert data to numpy array
+        data_array = np.array(data)  
 
 
 
@@ -162,18 +169,16 @@ class FrameCSVDisplay(FrameBase):
 
 
         percentage_motion_artifacts = (num_motion_artifacts / total_samples)
-        print("percentage artifacts: ", percentage_motion_artifacts)
 
         return map
 
 
     
     def detect_motion_artifacts(self, data):
-        # Implement your motion artifact detection algorithm here
         # Return a boolean array indicating the presence of motion artifacts for each sample
         
-        # Example: Detect motion artifacts based on signal amplitude exceeding a threshold
-        threshold = 50  # Adjust the threshold as needed
+        #Detect motion artifacts based on signal amplitude exceeding a threshold
+        threshold = 50 
         
         amplitude = np.abs(data)
         motion_artifacts = np.max(amplitude, axis=1) > threshold

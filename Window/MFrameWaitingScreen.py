@@ -33,15 +33,10 @@ class FrameWaitingScreen(FrameBase):
 
         buttons_frame.pack(side=BOTTOM, fill=X)
 
-    def start_simulation(self):
-        self.parent_frame.change_simulation_frame("simulation")
-        self.parent_frame.change_csv_frame("csv display")
+    
 
 
-    def allow_progression(self):
-        """Allow the start button to start the simulation once a CSV has been selected."""
-        self.start_button.config(bg="#42c4ee")
-        self.start_button.config(command=lambda:self.start_simulation())
+    
 
         
 

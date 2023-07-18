@@ -18,7 +18,7 @@ class FramePhysicalMenu(FrameBase):
     A frame holding functionality to connect to the UR3e arm and run the program.
     """
         
-    def __init__(self, master:Tk, main_window):
+    def __init__(self, master:Tk, main_window, program_window):
 
         # Initialise the frame.
         super().__init__(master, main_window)
@@ -26,14 +26,12 @@ class FramePhysicalMenu(FrameBase):
         # Initialise a global variable representing the Window the frames are held on.
         self.main_window = main_window
 
+        self.program_window = program_window
+
         # Initialise a boolean describing if the user is connected to the UR3e arm.
         self.connected = False
 
-        # Initialise a boolean describing if the user has chosen a CSV
-        self.chosen_csv = False
 
-        # Initialise a variable describing the current directory.
-        self.original_directory = os.getcwd()
 
 
         # Change the content on the frame to the Program Screen.
@@ -95,6 +93,7 @@ class FramePhysicalMenu(FrameBase):
 
         # Create a Connection button which attempts initial connection to the UR3e arm.
         self.connection_button = Button(options_frame, text="Attempt Connection", command= lambda:self.attempt_connection(),**self.button_style)
+        self.connection_button.config(bg="#D3D3D3")
         self.connection_button.pack(side=LEFT, expand=TRUE, pady=5)
 
         # Create a launch button which initially has no function.
@@ -103,13 +102,12 @@ class FramePhysicalMenu(FrameBase):
         # launch program can only work if the user has selected a csv and connected to the arm.
 
         # If the user is not connected to the UR3e arm,
-        if(not(self.connected and self.chosen_csv)):
+        if not self.connected:
             # Set the colour of the launch button to Grey, disabling the user from launching the program.
             self.start_button.config(bg="#D3D3D3")
 
         # If the user is connected to the UR3e arm,
         else:
-            print(self.connected, self.chosen_csv)
             # Set the colour of the launch button to Blue.
             self.start_button.config(bg="#42c4ee")
 
@@ -133,7 +131,6 @@ class FramePhysicalMenu(FrameBase):
         return frame
     
     def go_back(self):
-        os.chdir(self.original_directory)
         self.change_frame_content(self.main_window.change_frame("main menu"))
     
     
@@ -255,12 +252,9 @@ class FramePhysicalMenu(FrameBase):
         """
 
         
-        ros_command = "source devel/setup.bash && roslaunch cms_ur_launch tsoutsi.launch"
+        ros_command = "source ../../../devel/setup.bash && roslaunch cms_ur_launch tsoutsi.launch"
 
         # Change directory to the catkin workspace.
-        
-        os.chdir("../../..")
-        print(os.getcwd())
 
         master, slave = pty.openpty()
 
@@ -285,8 +279,6 @@ class FramePhysicalMenu(FrameBase):
                     if "Robot mode is now RUNNING" in output:
 
                         # SUCCESS!
-                        # Revert the directory back to the original directory.
-                        os.chdir(self.original_directory)
 
                         # Change the frame to a frame prompting the user to enter their IP.
                         self.change_frame_content(self.create_launch_frame)
@@ -303,8 +295,6 @@ class FramePhysicalMenu(FrameBase):
 
                         # Record that the user has connected to the robot.
                         self.connected = True
-
-                        os.chdir(self.original_directory)
                         break
 
             
@@ -317,7 +307,6 @@ class FramePhysicalMenu(FrameBase):
                         self.connected = False
                         self.connection_button.config(bg="red")
 
-                        os.chdir(self.original_directory)
             except OSError:
                 break
 
@@ -342,8 +331,10 @@ class FramePhysicalMenu(FrameBase):
         Attempt to run the program on the UR3E arm.
         """
 
+        
+
         # Change the colour of the launch button to orange to show that the program is attempting to run.
-        self.launch_button.config(bg="orange")
+        self.start_button.config(bg="orange")
 
         # Set the moveit success flag to false.
         self.moveit_succeeded = False
@@ -364,13 +355,11 @@ class FramePhysicalMenu(FrameBase):
         A thread responsible for launching the moveit command.
         """
 
-        moveit_command = "source devel/setup.bash && roslaunch ur3e_moveit_config moveit_planning_execution.launch"
+        moveit_command = "source ../../../devel/setup.bash && roslaunch ur3e_moveit_config moveit_planning_execution.launch"
 
         # Change directory to the catkin workspace in order to run ros commands.
 
        
-        
-        os.chdir("../../..")
 
         master, slave = pty.openpty()
 
@@ -393,15 +382,13 @@ class FramePhysicalMenu(FrameBase):
 
                     # SUCCESS!
                     self.moveit_succeeded = True
-                    os.chdir(self.original_directory)
                     break
 
                 # If the process has ended, it has failed.
                 if process.returncode == 1:
                     # FAIL!
-                    self.launch_button.config(bg="red")
+                    self.start_button.config(bg="red")
                     self.moveit_succeeded = False
-                    os.chdir(self.original_directory)
 
             except OSError:
                 break
@@ -415,9 +402,7 @@ class FramePhysicalMenu(FrameBase):
         """
 
 
-        program_command = "source devel/setup.bash && rosrun ur3e_moveit_config plan_moves.py"
-
-        os.chdir("../../..")
+        program_command = "source ../../../devel/setup.bash && rosrun ur3e_moveit_config MRobotCommands.py"
 
 
         master, slave = pty.openpty()
@@ -429,6 +414,8 @@ class FramePhysicalMenu(FrameBase):
             stderr=slave,
             universal_newlines=True
         )
+        self.program_window.change_csv_frame("csv display")
+
         # While the command is running,
         while True:
             try:
@@ -441,21 +428,18 @@ class FramePhysicalMenu(FrameBase):
 
 
                 # Check the return code.
-                if "Done" in output:
+                if "done" in output:
                     # Process ended successfully.
-                    print("Success")
-                    self.launch_button.config(bg="#42c4ee")
-                    os.chdir(self.original_directory)
-                    break
+                    print("DONE!!")
+                    self.program_window.signal_done()
 
 
                 if "ABORTED: CONTROL_FAILED" in output:
                     # Process failed.
-                    print("Failure")
-                    self.launch_button.config(bg="red")
-                    os.chdir(self.original_directory)
+                    self.start_button.config(bg="red")
                     break
 
             except OSError:
+                print("OS ERROR")
                 break
 

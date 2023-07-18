@@ -234,6 +234,10 @@ class FrameConnectToSensor(FrameBase):
 
                 # The connection was successful, change the colour of the button to green.
                 self.chosen_button.config(bg="green")
+                self.writing_thread = Thread(target=self.write_live_data)
+                self.writing_thread.start()
+                self.visual_window.allow_progression()
+                return
 
         # The connection was unsuccessful, the command returned an error code.
         self.chosen_button.config(bg="red")
@@ -342,16 +346,4 @@ class FrameConnectToSensor(FrameBase):
 
 
 
-
-    def change_frame(self, frame):
-        """
-        Destroy all threads currently running and redirect the user to the Display CSV frame.
-        """
-
-        self.simulation_frame.allow_progression()
-
-        print("hi")
-
-
-        self.writing_thread = Thread(target=self.write_live_data)
-        self.writing_thread.start()
+        
