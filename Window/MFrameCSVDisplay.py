@@ -18,10 +18,11 @@ class FrameCSVDisplay(FrameBase):
     Display a graph of the chosen CSV to the screen.
     """
 
-    # TODO: 
-
 
     def __init__(self, master:Tk, main_window, parent_frame):
+
+        self.SAMPLING_RATE = 256
+        self.BUFFER_SIZE = 2 * self.SAMPLING_RATE
         
         # Initialise the global variable which tracks the instance of Program Menu this frame is contained in.
         self.frame = parent_frame
@@ -71,9 +72,7 @@ class FrameCSVDisplay(FrameBase):
 
     def handle_graph(self):
         self.buffer = []
-        written = False
-        self.count = 0
-
+        has_started_drawing = False
 
         with open('muse_data.csv', 'r') as file:
             csv_reader = csv.reader(file)
@@ -90,19 +89,21 @@ class FrameCSVDisplay(FrameBase):
 
 
                     self.buffer.append(current_row)
-                    self.count += 1
 
                     # Increment the position of the slider and the current row to be accessed.
                     self.plus_csv(1)
 
                     self.plot_graph(current_row)
-                    time.sleep(0.01)
 
-                    if(len(self.buffer) > 512 and written == False):
 
-                        self.count = 0
+                    # This check allows the pen to begin drawing for the first time.
+                    # Otherwise, reset_buffer is called in MFrameProgramMenu, once the pen
+                    # has finished the current line.
+                    if(len(self.buffer) > self.BUFFER_SIZE and has_started_drawing == False):
+                        has_started_drawing = True
                         self.reset_buffer()
-                        written = True
+
+                    time.sleep(0.01)
 
                 except:
                     time.sleep(0.01)
@@ -111,19 +112,13 @@ class FrameCSVDisplay(FrameBase):
     def reset_buffer(self):
         """ once the pen has stopped drawing, send the next command and reset the buffer """
 
-        print("reset buffer")
-
-        self.buffer = self.buffer[self.count:] # remove the first count elements of the array
+        # resize the buffer 
+        self.buffer = self.buffer[-self.BUFFER_SIZE:] 
 
         map = self.calculate_psd(self.buffer)
-        print("map: ", map)
-
-        self.count = 0
 
         self.write_line_to_csv(map)
 
-        time.sleep(0.01)
-        
 
     def write_line_to_csv(self, line):
 
@@ -132,79 +127,66 @@ class FrameCSVDisplay(FrameBase):
             writer.writerow(line)
 
     def calculate_psd(self, data):
-        # Sampling frequency of Muse band
-        sfreq = 256  
-
-        # Recorded frequency ranges to be used in the drawing
-        freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'theta': (4, 7)}
 
         
 
-        info = mne.create_info(ch_names=['TP9', 'AF7', 'AF8', 'TP10'], sfreq=sfreq)
+        # Recorded frequency ranges to be used in the drawing
+        # 'Other' covers everything not covered in the previous three bands. Regarded as noise.
+        freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'other': (1,40)}
 
         # Convert data to numpy array
         data_array = np.array(data)  
 
-
-
-        subset_raw = mne.io.RawArray(data_array.T, info)
-        psd, freqs = psd_array_welch(subset_raw.get_data(), sfreq=sfreq, fmin=0.5, fmax=sfreq / 2, n_fft=256)
+        # Transpose data array to be in shape (num_channels, buffer_len) = (4,512)
+        # Collect data between frequencies 1 and 40 to eliminate some noise
+        psd, freqs = psd_array_welch(data_array.T, sfreq=self.SAMPLING_RATE, fmin=1, fmax=40, n_fft=256)
 
         # Extract PSD values for each channel and frequency range
-        channel_names = subset_raw.ch_names
         freq_band_psd = {}
         for freq_band, (fmin, fmax) in freq_ranges.items():
             freq_mask = (freqs >= fmin) & (freqs <= fmax)
-            psd_band = np.mean(psd[:, freq_mask], axis=1)
-            freq_band_psd[freq_band] = psd_band
 
+            # Selects only the PSD values that correspond to the frequency range defined by fmin and fmax
+            band_rows = psd[:,freq_mask]
 
-        map = self.map_psd_to_rotation(freq_band_psd)
+            # Calculate the mean alpha value for each channel
+            mean_psd_values_per_channel = np.mean(band_rows, axis=1)
 
+            # Calculate the mean of the psd from each channel, resulting in a single value.
+            mean_psd_value = np.mean(mean_psd_values_per_channel)
 
-        # Additional steps for motion artifact detection
-        motion_artifacts = self.detect_motion_artifacts(data_array)
-        num_motion_artifacts = np.count_nonzero(motion_artifacts)  # Count the number of samples with motion artifacts
-        total_samples = data_array.shape[0]  # Total number of samples
+            freq_band_psd[freq_band] = mean_psd_value
 
+        print(freq_band_psd)
 
-        percentage_motion_artifacts = (num_motion_artifacts / total_samples)
+        map = self.calculate_psd_percentage(freq_band_psd)
+
 
         return map
 
 
-    
-    def detect_motion_artifacts(self, data):
-        # Return a boolean array indicating the presence of motion artifacts for each sample
-        
-        #Detect motion artifacts based on signal amplitude exceeding a threshold
-        threshold = 50 
-        
-        amplitude = np.abs(data)
-        motion_artifacts = np.max(amplitude, axis=1) > threshold
-        
-        return motion_artifacts
 
 
-    def map_psd_to_rotation(self, freq_band_psd):
+    def calculate_psd_percentage(self, freq_band_psd):
+        """ Map the frequency bands to floats between 0 and 1. """
         
-        # Calculate the mapped values from the means
         mapped_values = {}
-        for freq_band in ['alpha', 'beta', 'theta']:
-            min_band = np.min(freq_band_psd[freq_band])
-            max_band = np.max(freq_band_psd[freq_band])
-            mean_psd = np.mean(freq_band_psd[freq_band])
 
-            # Normalize the mean_psd value between 0 and 1 using Min-Max normalization
-            normalized_value = (mean_psd - min_band) / (max_band - min_band)
+        # Sum the values of each frequency band
+        summed_values = sum(freq_band_psd.values())
 
-            # Store the normalized value
-            mapped_values[freq_band] = normalized_value
+        # For the power spectrum data, exclude the noise in the calculation.
+        for freq_band in ['alpha', 'beta']:
+            # Calculate the relative size of the current band compared to the sum of all bands.
+            mapped_values[freq_band] = freq_band_psd[freq_band] / (summed_values - freq_band_psd['other'])
+
+        # To calculate the percentage of noise in the buffer, divide the noise by the total power.
+        mapped_values['other'] = freq_band_psd['other'] / summed_values
+
+        print(mapped_values)
 
         # Return the mapped values as a list
-        return [mapped_values[freq_band] for freq_band in ['alpha', 'beta', 'theta']]
-
-            
+        return [mapped_values[freq_band] for freq_band in ['alpha', 'beta', 'other']]
 
 
 

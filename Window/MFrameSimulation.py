@@ -128,12 +128,10 @@ class FrameSimulation(FrameBase):
 
         alpha_percentage = mapped_rotations[0]
         alpha_curvature = int(alpha_percentage * 3) + 1
-        print(alpha_curvature)
         # curvature is an int between 1 and 3
 
         current_angle = self.pen.heading()
         beta_angle = mapped_rotations[1] * self.MAX_ANGLE
-        print(beta_angle)
 
 
         self.forward_amount = mapped_rotations[2] * 100
