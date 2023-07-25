@@ -117,24 +117,39 @@ class FrameCSVList(FrameBase):
         self.columnconfigure(1,weight=1)
         self.rowconfigure(1, weight=1)
 
+        
+        # Create the options frame
+        options_frame = Frame(self, bg="white")
+        options_frame.pack(side=BOTTOM, fill=X)
+
+        # Create an import button, allowing the user to import files.
+        Button(options_frame, text="Import File", **self.button_style, command=self.import_csv).pack(expand=True, side="left",pady=5)
+
+        # Create a Use Live Data button, navigating the user to the Connection screen.
+        Button(options_frame, text="Use Live Data", **self.button_style, command = lambda:self.program_window.change_csv_frame("connect to sensor")).pack(expand=True, side="left",pady=5)
+
+
+
+        self.scrollbar = Scrollbar(self, orient=VERTICAL)
+        self.scrollbar.pack(side=RIGHT, fill=Y, expand=FALSE)
+
         # Create a canvas with a white background.
-        self.canvas = Canvas(self, bg="white")
-        self.canvas.grid(row=0, column=0, sticky=NSEW, columnspan=2, rowspan=row_length+1)
+        self.canvas = Canvas(self, bg="white", yscrollcommand=self.scrollbar.set)
+        self.canvas.pack(side=BOTTOM, fill=BOTH, expand=TRUE)
 
         # Create a frame inside the canvas to hold the buttons
         self.frame = Frame(self.canvas, bg="white")
 
         # Allow the frame to resize.
-        self.frame.columnconfigure(0,weight=1)
+        self.frame.columnconfigure(0, weight=1)
+
+        self.interior_id = self.canvas.create_window(0, 0, window=self.frame, anchor=NW)
+
+        self.scrollbar.config(command=self.canvas.yview)
+
+        self.canvas.bind('<Configure>', self._configure_canvas)
+        self.frame.bind("<Configure>", self._configure_interior)
         
-
-        # Create a scrollbar and associate it with the canvas
-        scrollbar = Scrollbar(self, orient=VERTICAL, command=self.canvas.yview, **self.scrollbar_style)
-        scrollbar.grid(row=0, column=5, sticky=NS, rowspan=row_length+1)
-
-        # Assign a vertical scrollbar to the canvas.
-        self.canvas.configure(yscrollcommand=scrollbar.set)
-        self.canvas.create_window((0, 0), window=self.frame, anchor=NW)
 
         # Initialise the current row (of the CSV being displayed) to 1.
         self.row_num = 1
@@ -161,24 +176,22 @@ class FrameCSVList(FrameBase):
             # Display the information about the CSV.
             self.display_row(self.file_info_list[x], x)
 
-            
-        # Update the scroll region of the canvas
-        self.frame.update_idletasks()
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        
+    def _configure_interior(self, event):
+        # Update the scrollbars to match the size of the inner frame.
+        size = (self.frame.winfo_reqwidth(), self.frame.winfo_reqheight())
+        self.canvas.config(scrollregion=(0, 0, size[0], size[1]))
+        if self.frame.winfo_reqwidth() != self.canvas.winfo_width():
+            # Update the canvas's width to fit the inner frame.
+            self.canvas.config(width = self.frame.winfo_reqwidth())
 
-        self.frame.pack(fill=BOTH, expand=TRUE)
-
-        # Create the options frame
-        options_frame = Frame(self, bg="white")
-        options_frame.pack(side="bottom", fill="x")
-
-        # Create an import button, allowing the user to import files.
-        Button(options_frame, text="Import File", **self.button_style, command=self.import_csv).pack(expand=True, side="left",pady=5)
-
-        # Create a Use Live Data button, navigating the user to the Connection screen.
-        Button(options_frame, text="Use Live Data", **self.button_style, command = lambda:self.program_window.change_csv_frame("connect to sensor")).pack(expand=True, side="left",pady=5)
+    def _configure_canvas(self, event):
+        if self.frame.winfo_reqwidth() != self.canvas.winfo_width():
+            # Update the inner frame's width to fill the canvas.
+            self.canvas.itemconfigure(self.interior_id, width=self.canvas.winfo_width())
 
         
+
 
     def display_row(self, file, index):
         """
@@ -189,9 +202,10 @@ class FrameCSVList(FrameBase):
         change_function = self.create_csv_function(file["name"], file["extension"], index)
 
         # Display a button containing the name of the current CSV.
-        button = Button(self.frame, text= file["name"] , **self.button_style, command=change_function)
+        button = Button(self.frame, text=file["name"], **self.button_style, command=change_function)
         button.grid(row=self.row_num, column=0, sticky=NSEW, padx=20, pady=2)
         self.button_list.append(button)
+
 
         # Display a label containing the file extension.
         Label(self.frame, text= file["extension"],**self.secondary_label_style).grid(row=self.row_num, column=1, sticky=NSEW, padx=20, pady=2)
@@ -210,6 +224,8 @@ class FrameCSVList(FrameBase):
 
         # Increment the current row of data to be displayed.
         self.row_num+=1
+
+
 
     
     def import_csv(self):
@@ -231,7 +247,7 @@ class FrameCSVList(FrameBase):
         self.get_file_info(file_name)
 
         # Display the information to the screen.
-        self.display_row(self.file_info_list[-1])
+        self.display_row(self.file_info_list[-1], len(self.file_info_list) - 1)
 
 
 
@@ -297,9 +313,6 @@ class FrameCSVList(FrameBase):
                 # Remove the widget from the screen.
                 child.grid_forget()
 
-        # Adjust the scroll region of the canvas
-        frame.update_idletasks()
-        canvas.configure(scrollregion=canvas.bbox("all"))
 
 
 

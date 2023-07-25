@@ -10,6 +10,8 @@ from datetime import datetime
 import mne
 import numpy as np
 from mne.time_frequency import psd_array_welch
+import matplotlib as plt
+from matplotlib.animation import FuncAnimation
 
 # TODO: DETECT MOTION ARTIFACTS.. IF MIN < 0 OR MAX > 40? IN EPOCH ?
 
@@ -66,9 +68,13 @@ class FrameCSVDisplay(FrameBase):
         # Initialise the array holding the CSV Data.
         self.data = []
 
+        self.psds = []
+
         # Create a thread to draw the graph of brain data to the screen.
         self.graph_thread = Thread(target=self.handle_graph)
         self.graph_thread.start()
+
+
 
     def handle_graph(self):
         self.buffer = []
@@ -82,7 +88,6 @@ class FrameCSVDisplay(FrameBase):
                 try:
                     current_row = next(csv_reader)
 
-                    
                     # Convert the elements to float
                     current_row = [float(value) for value in current_row[1:]]
 
@@ -106,8 +111,35 @@ class FrameCSVDisplay(FrameBase):
                     time.sleep(0.01)
 
                 except:
+                    self.plot_psd()
                     time.sleep(0.01)
 
+    def plot_psd(self):
+        # Transpose the data to separate x, y1, y2, and y3 values
+        data_transposed = list(zip(*self.psds))
+
+        # Extract the x values and three sets of y values
+        x = data_transposed[0]
+        y1, y2, y3 = data_transposed[1:]
+
+        # Create a figure and axis
+        plt.figure()
+
+        # Plot the lines
+        plt.plot(x, y1, label='Line 1')
+        plt.plot(x, y2, label='Line 2')
+        plt.plot(x, y3, label='Line 3')
+
+        # Add labels and title
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+        plt.title('Three Lines from the Array')
+
+        # Add a legend
+        plt.legend()
+
+        # Show the plot
+        plt.show()
 
     def reset_buffer(self):
         """ once the pen has stopped drawing, send the next command and reset the buffer """
@@ -128,14 +160,16 @@ class FrameCSVDisplay(FrameBase):
 
     def calculate_psd(self, data):
 
-        
 
         # Recorded frequency ranges to be used in the drawing
         # 'Other' covers everything not covered in the previous three bands. Regarded as noise.
         freq_ranges = {'alpha': (8, 12), 'beta': (13, 30), 'other': (1,40)}
 
         # Convert data to numpy array
-        data_array = np.array(data)  
+
+        data_array = np.array(data)
+        data_array = data_array[:, 1:-1]
+        
 
         # Transpose data array to be in shape (num_channels, buffer_len) = (4,512)
         # Collect data between frequencies 1 and 40 to eliminate some noise
@@ -149,8 +183,11 @@ class FrameCSVDisplay(FrameBase):
             # Selects only the PSD values that correspond to the frequency range defined by fmin and fmax
             band_rows = psd[:,freq_mask]
 
-            # Calculate the mean alpha value for each channel
+
+            # Calculate the mean psd value for each channel
             mean_psd_values_per_channel = np.mean(band_rows, axis=1)
+
+            print(mean_psd_values_per_channel)
 
             # Calculate the mean of the psd from each channel, resulting in a single value.
             mean_psd_value = np.mean(mean_psd_values_per_channel)
@@ -176,12 +213,15 @@ class FrameCSVDisplay(FrameBase):
         summed_values = sum(freq_band_psd.values())
 
         # For the power spectrum data, exclude the noise in the calculation.
-        for freq_band in ['alpha', 'beta']:
-            # Calculate the relative size of the current band compared to the sum of all bands.
-            mapped_values[freq_band] = freq_band_psd[freq_band] / (summed_values - freq_band_psd['other'])
+        mapped_values['alpha'] = freq_band_psd['alpha'] / (summed_values - freq_band_psd['other'])
+
+        # For the power spectrum data, exclude the noise in the calculation.
+        mapped_values['beta'] = freq_band_psd['beta'] / (summed_values - freq_band_psd['other'])
 
         # To calculate the percentage of noise in the buffer, divide the noise by the total power.
         mapped_values['other'] = freq_band_psd['other'] / summed_values
+
+        self.psds.append(mapped_values.values())
 
         print(mapped_values)
 

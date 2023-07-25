@@ -52,9 +52,19 @@ class RobotCommands():
 
 
     def readLoop(self):
+            
+            while True:
+                alpha = random.uniform(0, 1)
+                beta = random.uniform(0, 1)
+                noise = random.uniformm(0, 1)
+                rotations = [alpha, beta, noise]
+                self.penLoop(rotations)
 
 
-            with open('mapped_rotations.csv', 'r') as file:
+
+
+
+            """with open('mapped_rotations.csv', 'r') as file:
                 csv_reader = csv.reader(file)
 
                 while True:
@@ -74,7 +84,7 @@ class RobotCommands():
                         time.sleep(0.01)
                         # You can also break the loop if you don't want to continue reading the file
                         # break
-                        print("WAITING")
+                        print("WAITING")"""
 
             
 

@@ -68,29 +68,6 @@ To get a local copy up and running follow these simple example steps.
 
 ### Installation
 
-#### Hardware Requirements
-
-This project requires access to the following hardware:
-
-- Muse 2 Sensor: This is the brain sensor we use to record the brainwaves for both the physical and digital versions of the program.
-(Note: other brain sensors may be suitable, if there is an option to record the power frequency data in the form of a CSV.)
-
-- Universal Robot UR3e Arm: This is the arm we use to draw the paintings in the physical version of the program. 
-
-- Gripper attachment: We 3D printed a custom attachment to hold the pen, which is located in our repository under “Prototypes/CMS UR3e Pen Mount.stl”, along with rubber bands to secure the pen in place. If you don’t have a 3D printer, you can use one of Universal Robots’ advertised grippers, or create an alternative device to hold the pen.
-
-
-- Pen: We used a Sharpie, but you are free to use any pen you like. 
-(Note: different pens will need to be configured on the arm to draw correctly.)
-
-- A2 Paper: This is what we used as the surface for the painting. 
-(Note: you are free to use an alternative canvas, but it should be configured to allow the pen to draw.)
-
-- An Ethernet cable (Optional): We experienced connection issues when connecting to the robot wirelessly, and this improved when using an Ethernet cable.
-
-- A USB-C to USB converter (Optional): Some Mac machines have no USB port. If you are dual booting on a Mac, you may need a converter to boot the Ubuntu image.
-
-
 #### Installing the Required Drivers:
 
 1.	Source the ROS workspace:
