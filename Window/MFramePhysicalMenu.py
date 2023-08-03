@@ -303,11 +303,12 @@ class FramePhysicalMenu(FrameBase):
                     # If the process has ended, connection has failed.
                     if "Connection to reverse interface dropped" in output:
                         # FAIL!
-                        print("yes")
+                        print("connection dropped")
                         self.connected = False
                         self.connection_button.config(bg="red")
 
             except OSError:
+                print("os")
                 break
 
 
@@ -382,15 +383,16 @@ class FramePhysicalMenu(FrameBase):
 
                     # SUCCESS!
                     self.moveit_succeeded = True
-                    break
 
                 # If the process has ended, it has failed.
                 if process.returncode == 1:
                     # FAIL!
                     self.start_button.config(bg="red")
                     self.moveit_succeeded = False
+                    print("moveit stopped")
 
             except OSError:
+                print("moveit os")
                 break
 
 
@@ -426,11 +428,9 @@ class FramePhysicalMenu(FrameBase):
                 if output:
                     print(output)
 
-
                 # Check the return code.
                 if "done" in output:
                     # Process ended successfully.
-                    print("DONE!!")
                     self.program_window.signal_done()
 
 

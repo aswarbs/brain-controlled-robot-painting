@@ -17,6 +17,7 @@ import time
 import numpy as np
 from threading import Thread
 from scipy import signal
+from random import choice
 
 
 class RobotCommands():
@@ -37,6 +38,11 @@ class RobotCommands():
                                                     queue_size=20)
         
         
+        self.iterations = 10
+        self.rotation_per_iteration = pi/self.iterations
+        self.direction = 1
+        self.small_direction = 1
+
         self.plan_joints = [0] * 6
 
         self.plan_joints = self.group.get_current_joint_values()
@@ -48,66 +54,85 @@ class RobotCommands():
         self.move_down()
         self.plan_goal()
 
-        self.readLoop()
 
+        self.readLoop()
 
     def readLoop(self):
             
+
+
+
+
+        with open('mapped_rotations.csv', 'r') as file:
+            csv_reader = csv.reader(file)
+
             while True:
-                alpha = random.uniform(0, 1)
-                beta = random.uniform(0, 1)
-                noise = random.uniformm(0, 1)
-                rotations = [alpha, beta, noise]
-                self.penLoop(rotations)
+                print("reading...")
+                try:
+                    current_row = next(csv_reader)
+
+                    # Convert the elements to float
+                    current_row = [float(value) for value in current_row]
 
 
+                    print("current row: ", current_row)
 
+                    self.penLoop(current_row)
 
-
-            """with open('mapped_rotations.csv', 'r') as file:
-                csv_reader = csv.reader(file)
-
-                while True:
-                    print("reading...")
-                    try:
-                        current_row = next(csv_reader)
-
-                        # Convert the elements to float
-                        current_row = [float(value) for value in current_row]
-
-                        print("current row: ", current_row)
-
-                        self.penLoop(current_row)
-
-                    except StopIteration:
-                        # If there is no next row, sleep or perform other desired actions
-                        time.sleep(0.01)
-                        # You can also break the loop if you don't want to continue reading the file
-                        # break
-                        print("WAITING")"""
+                except StopIteration:
+                    # If there is no next row, sleep or perform other desired actions
+                    time.sleep(0.01)
+                    # You can also break the loop if you don't want to continue reading the file
+                    # break
+                    print("WAITING")
 
             
 
     def penLoop(self, rotations):
 
         
-        alpha_rotation = rotations[0] * (pi/4)
-        beta_rotation = rotations[1] * (pi/4)
-        theta_rotation = rotations[2] * (pi/4)
+        alpha_rotation = (rotations[0] * pi/2) - pi/4 #between -pi/4 and pi/4
+        beta_rotation = (rotations[1] * (2 * pi))
+
+        self.rotate_left(self.rotation_per_iteration * self.direction)
+        self.circle_left(beta_rotation)
+        self.small_direction *= -1
+
+        noise = rotations[2]
+
+        """if(noise > 0.5):
+            # there is a lot of noise.. penup / pendown?
+            self.move_forward(noise * self.small_direction)
+
+            self.plan_goal()"""
+
+        print(alpha_rotation, beta_rotation, "rotations")
+
+
+
+        """noise = rotations[2]
+
+        functions = [self.move_forward, self.move_left]
+
+
+        if(noise > 0.5):
+            # there is a lot of noise.. penup / pendown?
+
+            print("noise: ", noise)
+
+            choice(functions)(noise)
+            self.plan_goal()
+
 
 
         # Alpha
         # Controls Rotation
-        self.rotate_left(alpha_rotation/ 4)
-        self.circle_left(alpha_rotation / 4)
+        self.rotate_left(alpha_rotation)
+        self.circle_left(beta_rotation)"""
 
-        # Beta
-        # Used to control left and right
-        self.move_left(beta_rotation)
 
-        # Theta
-        # Controls up & downs
-        self.move_forward(theta_rotation)
+
+
 
         self.plan_goal()
 
@@ -121,7 +146,7 @@ class RobotCommands():
         self.plan_joints[0] = pi/2
         self.plan_joints[1] = 0
         self.plan_joints[3] = 0
-        self.plan_joints[4] = pi    
+        self.plan_joints[4] = pi/2
         self.plan_joints[5] = pi/4
 
         self.plan_goal()
@@ -180,18 +205,20 @@ class RobotCommands():
         # check overflow
         for x in range(0, len(self.plan_joints )):
 
-            if(self.plan_joints [x] < -(pi)):
-                self.plan_joints [x] += pi
+            if(self.plan_joints [x] < -(2 * pi)):
+                self.plan_joints [x] += (2 *pi)
 
-            if(self.plan_joints [x] > (pi)):
-                self.plan_joints [x] -= pi
+            if(self.plan_joints [x] > (2 * pi)):
+                self.plan_joints [x] -= (2*pi)
 
         # keep pen on page
         if(self.plan_joints[0] < pi/4):
-            self.plan_joints[0] += pi/4
+            #self.plan_joints[0] += pi/4
+            self.direction *= -1
 
-        if(self.plan_joints[0] > (3 * pi)/4):
-            self.plan_joints[0] -= pi/4
+        if(self.plan_joints[0] > ((5 * pi)/8)):
+            #self.plan_joints[0] -= pi/4
+            self.direction *= -1
 
 
         # ADDITIONAL OPTIONAL BOUNDARIES HERE

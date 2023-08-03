@@ -121,7 +121,7 @@ class FrameConnectToSensor(FrameBase):
                 ch_data_tp10 = np.array(eeg_data)[:, 3]
 
 
-                row_data = [timestamp, np.mean(ch_data_tp9), np.mean(ch_data_af7), np.mean(ch_data_af8), np.mean(ch_data_tp10)]
+                row_data = ["NA", np.mean(ch_data_tp9), np.mean(ch_data_af7), np.mean(ch_data_af8), np.mean(ch_data_tp10)]
 
                 with open("muse_data.csv", mode = "a", newline = '') as file:
                     # Write to file in a new line
