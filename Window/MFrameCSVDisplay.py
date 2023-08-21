@@ -25,6 +25,8 @@ class FrameCSVDisplay(FrameBase):
 
         self.SAMPLING_RATE = 256
         self.BUFFER_SIZE = 2 * self.SAMPLING_RATE
+        self.start_time = time.time()
+        self.end_time = self.start_time + 60
         
         # Initialise the global variable which tracks the instance of Program Menu this frame is contained in.
         self.frame = parent_frame
@@ -40,6 +42,10 @@ class FrameCSVDisplay(FrameBase):
         self.blink = False
         self.back=False
         self.destroy = False
+
+        # Clear existing data in the muse_data.csv file
+        with open("mapped_rotations.csv", mode="w", newline=""):
+            pass
         
 
 
@@ -74,6 +80,15 @@ class FrameCSVDisplay(FrameBase):
         self.graph_thread = Thread(target=self.handle_graph)
         self.graph_thread.start()
 
+        self.check_thread_still_running()
+
+    def check_thread_still_running(self):
+        if(self.graph_thread.is_alive()):
+            self.after(50,self.check_thread_still_running)
+        else:
+            self.go_back()
+
+
 
 
     def handle_graph(self):
@@ -84,6 +99,9 @@ class FrameCSVDisplay(FrameBase):
             csv_reader = csv.reader(file)
 
             while (self.destroy == False and self.back == False):
+
+                if(time.time() > self.end_time):
+                    return
 
                 try:
                     current_row = next(csv_reader)
@@ -113,8 +131,26 @@ class FrameCSVDisplay(FrameBase):
                 except:
                     time.sleep(0.01)
 
+        return
+
 
     # muse should only start writing to muse_data when started..
+
+    def handle_faces(self):
+        # Open the file in read mode
+        with open('muse_data.csv', 'r') as file:
+            # Read the lines and store them in an array
+            csv_reader =csv.reader(file)
+            csv_data = list(csv_reader)
+
+
+        # Convert the elements to floats
+        for row in csv_data:
+            row[:] = [float(x) for x in row]
+        
+        psds = self.calculate_psd(csv_data)
+
+        self.write_line_to_csv(psds)
 
     def reset_buffer(self):
         """ once the pen has stopped drawing, send the next command and reset the buffer """
@@ -292,25 +328,7 @@ class FrameCSVDisplay(FrameBase):
         
         self.graph_thread.join()
 
-        cwd = os.getcwd()
-
-        # save the csv
-        src_dir = cwd
-        src_file = 'muse_data.csv'
-        dest_dir = cwd + '/CSVs'
-        # Get the current date and time
-        current_datetime = datetime.now()
-        date_time_string = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-
-        # Build the destination file path
-        dest_file = f"{date_time_string}.csv"
-
-        # Build the source and destination file paths
-        src_path = os.path.join(src_dir, src_file)
-        dest_path = os.path.join(dest_dir, dest_file)
-
-        # Copy the file and rename it
-        shutil.copy(src_path, dest_path)
+        self.frame.ask_file_dialog()
 
         self.frame.change_simulation_frame("waiting screen")
         self.frame.change_csv_frame("csv list")

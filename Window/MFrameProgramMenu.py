@@ -1,6 +1,10 @@
+
+import shutil
 from tkinter import *
+from tkinter import simpledialog
 from Window import *
 import csv
+import os
 
 class FrameProgramMenu(FrameBase):
     """
@@ -104,14 +108,39 @@ class FrameProgramMenu(FrameBase):
             
             for row in csv_reader:
                 # Select columns 2 to 5 (indexes 1 to 4) from the row and convert to floats
-                selected_columns = [float(value) for value in row[0:5]]
+                selected_columns = [float(value) for value in row[1:5]]
                 
                 csv_writer.writerow(selected_columns)
+
+    def ask_file_dialog(self):
+        user_input = simpledialog.askstring("Input", "Enter file name:", parent=self, initialvalue="")
+        
+        if user_input is not None:  # User clicked OK
+            print("User input:", user_input)
+
+        cwd = os.getcwd()
+
+        # save the csv
+        src_dir = cwd
+        src_file = 'muse_data.csv'
+        dest_dir = cwd + '/CSVs'
+        # Build the destination file path
+        dest_file = f"{user_input}.csv"
+
+        # Build the source and destination file paths
+        src_path = os.path.join(src_dir, src_file)
+        dest_path = os.path.join(dest_dir, dest_file)
+
+        # Copy the file and rename it
+        shutil.copy(src_path, dest_path)
 
 
     def signal_done(self):
         self.frames["csv_frame"].reset_buffer()
 
+    def handle_faces(self):
+        self.frames["csv_frame"].handle_faces()
+        
     def change_csv_frame(self, frame_name, **args):
         """
         Change the currently hosted CSV frame.

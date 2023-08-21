@@ -1,10 +1,6 @@
 import turtle
 from tkinter import *
-import random
-from math import cos, sin, pi
 from Window import *
-import numpy as np
-import math
 from threading import Thread
 import csv
 import time

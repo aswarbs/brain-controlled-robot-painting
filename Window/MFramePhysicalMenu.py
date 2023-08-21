@@ -6,6 +6,7 @@ import os
 import pty
 import netifaces
 import time
+from tkinter import simpledialog
 
 """
 TODO:
@@ -23,6 +24,14 @@ class FramePhysicalMenu(FrameBase):
         # Initialise the frame.
         super().__init__(master, main_window)
 
+        self.running = False
+
+        self.selected_var = StringVar()
+        self.selected_var.set("MRobotCommands.py")
+
+        self.entry_value = StringVar()
+        self.entry_value.set("")  # Default value for the text entry
+
         # Initialise a global variable representing the Window the frames are held on.
         self.main_window = main_window
 
@@ -30,6 +39,8 @@ class FramePhysicalMenu(FrameBase):
 
         # Initialise a boolean describing if the user is connected to the UR3e arm.
         self.connected = False
+
+        self.back = False
 
 
 
@@ -118,6 +129,7 @@ class FramePhysicalMenu(FrameBase):
             self.connection_button.config(bg="green")
 
         self.start_button.pack(side=LEFT, expand=TRUE, pady=5)
+
         options_frame.pack(side=BOTTOM, fill=X)
 
         # Create a Title label for the frame.
@@ -128,10 +140,26 @@ class FramePhysicalMenu(FrameBase):
         Label(frame,text="An Ethernet connection is highly recommended.", **self.secondary_label_style).pack()
         Label(frame,text="Otherwise, ensure you are connected to the same WiFi as the UR3e arm.", **self.secondary_label_style).pack()
 
+        self.display_dropdown(frame)
+
         return frame
     
     def go_back(self):
+
+        # enter a name for the file
+
+        self.back = True
         self.change_frame_content(self.main_window.change_frame("main menu"))
+
+        if(self.running):
+            self.program_window.ask_file_dialog()
+            self.process.terminate()
+
+
+        
+        
+        
+        
     
     
 
@@ -218,6 +246,8 @@ class FramePhysicalMenu(FrameBase):
         Label(frame, text="On the UR3e tablet, navigate to the page shown in the image.", **self.secondary_label_style).pack()
         Label(frame, text="Under Host IP, enter your IP address.", **self.secondary_label_style).pack()
 
+        
+
         # ADD A BACK BUTTON
 
         # Create a button allowing the user to continue once successfully connected.
@@ -239,6 +269,8 @@ class FramePhysicalMenu(FrameBase):
         for widget in self.winfo_children():
             widget.destroy()
 
+        
+
         # Create and pack the new content on the frame
         self = new_content()
         self.config(bg="white")
@@ -259,7 +291,7 @@ class FramePhysicalMenu(FrameBase):
         master, slave = pty.openpty()
 
         # Run the connection command.
-        process = subprocess.Popen(
+        self.process = subprocess.Popen(
             ["bash", "-c", ros_command],
             stdout=slave,
             stderr=slave,
@@ -267,7 +299,7 @@ class FramePhysicalMenu(FrameBase):
         )
 
         # The command runs indefinitely to establish the connection.
-        while True:
+        while not(self.back):
             try:
                 # Read the current line outputted by the process.
                 output = os.read(master, 1024).decode()
@@ -373,7 +405,7 @@ class FramePhysicalMenu(FrameBase):
         )
 
         # The command runs indefinitely to keep a connection to the robot.
-        while True:
+        while not(self.back):
             try:
                 # Read the current output from the command.
                 output = os.read(master, 1024).decode()
@@ -395,7 +427,24 @@ class FramePhysicalMenu(FrameBase):
                 print("moveit os")
                 break
 
+        process.terminate()
 
+    
+
+    def display_dropdown(self, options_frame):
+        # create 
+        
+
+        # Create a label and associate it with the StringVar
+        label = Label(options_frame, text="Current Trajectory:", **self.secondary_label_style)
+        label.pack(side=LEFT, padx=10, pady=10,expand=TRUE)
+
+
+        dropdown = OptionMenu(options_frame, self.selected_var, "MRobotCommands.py", "faces.py")
+        dropdown.config(font=("Bahnschrift Light", 14), bg='white', fg='black', activebackground='gray', activeforeground='white', relief='flat')
+
+        dropdown["menu"].config(font=("Bahnschrift Light", 14), bg='white', fg='black')
+        dropdown.pack(side=LEFT, padx=10, pady=10, expand=TRUE)
 
     
     def launch_program(self):
@@ -404,7 +453,10 @@ class FramePhysicalMenu(FrameBase):
         """
 
 
-        program_command = "source ../../../devel/setup.bash && rosrun ur3e_moveit_config MRobotCommands.py"
+        program_command = "source ../../../devel/setup.bash && rosrun ur3e_moveit_config " + self.selected_var.get()
+        print("program command: ", program_command)
+
+
 
 
         master, slave = pty.openpty()
@@ -417,9 +469,13 @@ class FramePhysicalMenu(FrameBase):
             universal_newlines=True
         )
         self.program_window.change_csv_frame("csv display")
+        self.running = True
+
+        if(self.selected_var.get() == "faces.py"):
+            self.program_window.handle_faces()
 
         # While the command is running,
-        while True:
+        while not(self.back):
             try:
                 # Read the current output.
                 output = os.read(master, 1024).decode()
@@ -442,4 +498,4 @@ class FramePhysicalMenu(FrameBase):
             except OSError:
                 print("OS ERROR")
                 break
-
+        process.terminate()

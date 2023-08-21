@@ -41,21 +41,48 @@ class RobotCommands():
         self.iterations = 10
         self.rotation_per_iteration = pi/self.iterations
         self.direction = 1
+        self.orientation = 1
         self.small_direction = 1
+        self.current_rotation = 0.0
+        self.total_rotation = 0
+        self.significant_difference = 0.1
+
+        self.prev_alpha = 0.5
+        self.prev_beta = 0.5
 
         self.plan_joints = [0] * 6
 
-        self.plan_joints = self.group.get_current_joint_values()
-
-        self.return_to_home()
-
         self.move_to_initial_position()
+        self.plan_goal()
 
         self.move_down()
         self.plan_goal()
 
 
+
+
         self.readLoop()
+
+        
+
+        while True:
+            self.move_backward(pi/16 * self.orientation)
+            self.plan_goal()
+
+    def move_backward(self, amount):
+
+        if((self.plan_joints[1] + amount) > ((3 * pi)/8) and amount > 0):
+            amount *= -1
+            self.orientation *= -1
+
+        elif((self.plan_joints[1] + amount) < ((5 * pi)/16) and amount < 0):
+            amount *= -1
+            self.orientation *= -1
+
+
+        self.plan_joints[1] += amount
+        self.plan_joints[2] -= (3 * amount)/2
+        self.plan_joints[3] += amount/2
 
     def readLoop(self):
             
@@ -86,79 +113,74 @@ class RobotCommands():
                     # break
                     print("WAITING")
 
-            
-
     def penLoop(self, rotations):
 
-        
-        alpha_rotation = (rotations[0] * pi/2) - pi/4 #between -pi/4 and pi/4
-        beta_rotation = (rotations[1] * (2 * pi))
-
-        self.rotate_left(self.rotation_per_iteration * self.direction)
-        self.circle_left(beta_rotation)
-        self.small_direction *= -1
-
-        noise = rotations[2]
-
-        """if(noise > 0.5):
-            # there is a lot of noise.. penup / pendown?
-            self.move_forward(noise * self.small_direction)
-
-            self.plan_goal()"""
-
-        print(alpha_rotation, beta_rotation, "rotations")
 
 
+        alpha_rotation = rotations[0] * pi/2
+        beta_rotation = rotations[1] * (pi / 4)
+
+        alpha_difference = rotations[0] - self.prev_alpha
+        beta_difference = rotations[1] - self.prev_beta
+
+        if(alpha_difference < -self.significant_difference):
+            # alpha is lower
+            # the small circle will oscillate
+            self.small_direction *= -1
+
+        if(alpha_difference > self.significant_difference):
+            alpha_rotation *= 2
+
+        if(beta_difference > self.significant_difference):
+            # beta is higher
+            # the large circle will oscillate
+            self.direction *= -1
+
+        if(beta_difference < -self.significant_difference):
+            beta_rotation *= 2
+
+
+        self.circle_left(alpha_rotation * self.small_direction)
+
+        self.rotate_left(beta_rotation * self.direction)
 
         """noise = rotations[2]
-
-        functions = [self.move_forward, self.move_left]
-
-
-        if(noise > 0.5):
-            # there is a lot of noise.. penup / pendown?
-
-            print("noise: ", noise)
-
-            choice(functions)(noise)
-            self.plan_goal()
-
-
-
-        # Alpha
-        # Controls Rotation
-        self.rotate_left(alpha_rotation)
-        self.circle_left(beta_rotation)"""
-
-
-
-
+        noise = noise * (pi/8)
+        noise = noise - (pi/16)
+        # -pi/16 < noise < pi/16
+            
+        self.move_backward(noise)"""
 
         self.plan_goal()
+
+        self.prev_alpha = rotations[0]
+        self.prev_beta = rotations[1]
+
+
 
         print("done")
 
 
+
     def move_to_initial_position(self):    
 
-        self.plan_joints = self.group.get_current_joint_values()    
-
-        self.plan_joints[0] = pi/2
+        self.plan_joints[0] = random.uniform(pi/4, pi/2)
         self.plan_joints[1] = 0
         self.plan_joints[3] = 0
-        self.plan_joints[4] = pi/2
+        self.plan_joints[4] = random.uniform(0, pi)
         self.plan_joints[5] = pi/4
 
-        self.plan_goal()
-    
 
         
     def move_down(self):
 
         self.plan_joints[1] += pi/4
         self.plan_joints[2] -= pi/4
-    
         
+    def move_up(self):
+        self.plan_joints[1] -= pi/4
+        self.plan_joints[2] += pi/4
+
 
     def move_left(self, amount):
 
@@ -167,26 +189,41 @@ class RobotCommands():
 
 
 
-    def move_forward(self, amount):
-
-        self.plan_joints[4] -= amount
-        self.plan_joints[0] -= amount / 8
 
 
 
     def rotate_left(self, amount):
 
-        self.plan_joints[0] += amount
+
+
+        self.plan_joints[0] += (amount)
+
+        # keep pen on page
+        if((self.plan_joints[0] + amount < pi/4) and (amount < 0)):
+            self.direction *= -1
+
+        if((self.plan_joints[0] + amount > pi/2) and (amount > 0)):
+            self.direction *= -1
 
 
     def circle_left(self, amount):
+
+        
+        if(self.plan_joints[4] + amount > (3 * pi)/2):
+            amount *= -1
+            self.small_direction *= -1
+
+        elif(self.plan_joints[4] + amount < -(3 * pi)/2):
+            amount *= -1
+            self.small_direction *= -1
 
         self.plan_joints[4] += amount
 
 
 
+
+
     def return_to_home(self):
-        self.plan_joints = self.group.get_current_joint_values()
         self.plan_joints[0] = 0
         self.plan_joints[1] = -pi/2
         self.plan_joints[2] = 0
@@ -197,47 +234,26 @@ class RobotCommands():
         self.plan_goal()
 
 
-    def check_boundaries(self):
-        """Check any boundaries set."""
-
-        # FIRST CHECK THE PAGE / JOINT BOUNDARIES
-
-        # check overflow
-        for x in range(0, len(self.plan_joints )):
-
-            if(self.plan_joints [x] < -(2 * pi)):
-                self.plan_joints [x] += (2 *pi)
-
-            if(self.plan_joints [x] > (2 * pi)):
-                self.plan_joints [x] -= (2*pi)
-
-        # keep pen on page
-        if(self.plan_joints[0] < pi/4):
-            #self.plan_joints[0] += pi/4
-            self.direction *= -1
-
-        if(self.plan_joints[0] > ((5 * pi)/8)):
-            #self.plan_joints[0] -= pi/4
-            self.direction *= -1
-
-
-        # ADDITIONAL OPTIONAL BOUNDARIES HERE
 
 
 
+        
     def plan_goal(self):
 
-        self.check_boundaries()
+        # Set a positive velocity for the joint (pi/8 radians per second for example, adjust as needed).
+        joint_velocity = pi / 8
 
-        print("joints: ", self.plan_joints)
 
+        # Move the joint to the target configuration using velocity control.
         self.group.go(self.plan_joints, wait=True)
+
 
         print("gone")
 
-        # Calling ``stop()`` ensures that there is no residual movement
+        # Calling ``stop()`` ensures that there is no residual movement.
         self.group.stop()
 
         print("stopped!")
+
 
 robot = RobotCommands()
